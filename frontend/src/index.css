@@ -1,0 +1,262 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Core palette - Warm sunset tones */
+    --background: 30 100% 99%;
+    --foreground: 20 25% 20%;
+
+    --card: 30 50% 98%;
+    --card-foreground: 20 25% 20%;
+
+    --popover: 30 50% 98%;
+    --popover-foreground: 20 25% 20%;
+
+    /* Primary - Coral */
+    --primary: 12 76% 61%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary - Soft peach */
+    --secondary: 25 100% 94%;
+    --secondary-foreground: 20 25% 25%;
+
+    --muted: 30 30% 95%;
+    --muted-foreground: 20 15% 45%;
+
+    /* Accent - Warm gold */
+    --accent: 40 90% 65%;
+    --accent-foreground: 20 25% 15%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 25 30% 88%;
+    --input: 25 30% 88%;
+    --ring: 12 76% 61%;
+
+    --radius: 1rem;
+
+    /* Theme colors */
+    --theme-default-from: 12 76% 61%;
+    --theme-default-to: 40 90% 70%;
+    
+    --theme-birthday-from: 280 65% 60%;
+    --theme-birthday-to: 330 70% 65%;
+    
+    --theme-love-from: 340 75% 55%;
+    --theme-love-to: 12 80% 60%;
+    
+    --theme-celebration-from: 45 95% 55%;
+    --theme-celebration-to: 25 90% 60%;
+
+    /* Gradients */
+    --gradient-hero: linear-gradient(135deg, hsl(12 76% 61% / 0.9), hsl(25 90% 70% / 0.9), hsl(40 90% 75% / 0.8));
+    --gradient-card: linear-gradient(180deg, hsl(30 50% 99%), hsl(25 60% 96%));
+    --gradient-button: linear-gradient(135deg, hsl(12 76% 61%), hsl(25 85% 58%));
+    --gradient-button-hover: linear-gradient(135deg, hsl(12 76% 55%), hsl(25 85% 52%));
+
+    /* Shadows */
+    --shadow-soft: 0 4px 20px -4px hsl(12 50% 50% / 0.15);
+    --shadow-card: 0 8px 32px -8px hsl(12 50% 40% / 0.12);
+    --shadow-button: 0 4px 16px -2px hsl(12 70% 50% / 0.3);
+    --shadow-glow: 0 0 40px hsl(12 76% 61% / 0.2);
+
+    /* Sidebar - kept for compatibility */
+    --sidebar-background: 30 50% 98%;
+    --sidebar-foreground: 20 25% 25%;
+    --sidebar-primary: 12 76% 61%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 25 100% 94%;
+    --sidebar-accent-foreground: 20 25% 25%;
+    --sidebar-border: 25 30% 88%;
+    --sidebar-ring: 12 76% 61%;
+  }
+
+  .dark {
+    --background: 20 20% 8%;
+    --foreground: 30 20% 95%;
+
+    --card: 20 20% 12%;
+    --card-foreground: 30 20% 95%;
+
+    --popover: 20 20% 12%;
+    --popover-foreground: 30 20% 95%;
+
+    --primary: 12 76% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 20 25% 18%;
+    --secondary-foreground: 30 20% 90%;
+
+    --muted: 20 20% 18%;
+    --muted-foreground: 30 15% 60%;
+
+    --accent: 40 70% 50%;
+    --accent-foreground: 20 20% 8%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 20 20% 20%;
+    --input: 20 20% 20%;
+    --ring: 12 76% 55%;
+
+    --gradient-hero: linear-gradient(135deg, hsl(12 60% 30% / 0.9), hsl(25 50% 25% / 0.9));
+    --gradient-card: linear-gradient(180deg, hsl(20 20% 12%), hsl(20 20% 10%));
+    --gradient-button: linear-gradient(135deg, hsl(12 76% 50%), hsl(25 85% 45%));
+    
+    --shadow-soft: 0 4px 20px -4px hsl(0 0% 0% / 0.4);
+    --shadow-card: 0 8px 32px -8px hsl(0 0% 0% / 0.5);
+    --shadow-button: 0 4px 16px -2px hsl(12 70% 40% / 0.4);
+    --shadow-glow: 0 0 40px hsl(12 76% 50% / 0.15);
+
+    --sidebar-background: 20 20% 10%;
+    --sidebar-foreground: 30 20% 90%;
+    --sidebar-primary: 12 76% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 20 25% 15%;
+    --sidebar-accent-foreground: 30 20% 90%;
+    --sidebar-border: 20 20% 18%;
+    --sidebar-ring: 12 76% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
+  }
+}
+
+@layer components {
+  .gradient-hero {
+    background: var(--gradient-hero);
+  }
+
+  .gradient-card {
+    background: var(--gradient-card);
+  }
+
+  .gradient-button {
+    background: var(--gradient-button);
+  }
+
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+
+  .shadow-button {
+    box-shadow: var(--shadow-button);
+  }
+
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  /* Theme backgrounds */
+  .theme-default {
+    --theme-from: var(--theme-default-from);
+    --theme-to: var(--theme-default-to);
+  }
+
+  .theme-birthday {
+    --theme-from: var(--theme-birthday-from);
+    --theme-to: var(--theme-birthday-to);
+  }
+
+  .theme-love {
+    --theme-from: var(--theme-love-from);
+    --theme-to: var(--theme-love-to);
+  }
+
+  .theme-celebration {
+    --theme-from: var(--theme-celebration-from);
+    --theme-to: var(--theme-celebration-to);
+  }
+
+  .theme-gradient {
+    background: linear-gradient(135deg, hsl(var(--theme-from)), hsl(var(--theme-to)));
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(5deg); }
+}
+
+@keyframes sparkle {
+  0%, 100% { opacity: 0; transform: scale(0); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes confetti-fall {
+  0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+@keyframes heart-beat {
+  0%, 100% { transform: scale(1); }
+  25% { transform: scale(1.1); }
+  50% { transform: scale(1); }
+  75% { transform: scale(1.05); }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-sparkle {
+  animation: sparkle 2s ease-in-out infinite;
+}
+
+.animate-confetti {
+  animation: confetti-fall 4s linear infinite;
+}
+
+.animate-heartbeat {
+  animation: heart-beat 1.5s ease-in-out infinite;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.6s ease-out forwards;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.4s ease-out forwards;
+}
