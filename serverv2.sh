@@ -325,7 +325,7 @@ create_default_env() {
     
     cat > "$APP_DIR/.env" << EOF
 # Wishaday Configuration
-DATABASE_URL=sqlite:///./app/wishaday.db
+DATABASE_URL=sqlite:///$APP_DIR/app/wishaday.db
 UPLOAD_DIR=./app/uploads
 MAX_FILE_SIZE=2097152
 MAX_IMAGES_PER_WISH=5
@@ -345,16 +345,28 @@ fix_env_file() {
     
     local env_file="$APP_DIR/.env"
     
-    # Fix DATABASE_URL if it's malformed
+    # Fix DATABASE_URL if it's malformed (https issue)
     if grep -q "DATABASE_URL=https" "$env_file" 2>/dev/null; then
-        sed -i 's|^DATABASE_URL=.*|DATABASE_URL=sqlite:///./app/wishaday.db|' "$env_file"
-        log_info "Fixed malformed DATABASE_URL"
+        sed -i "s|^DATABASE_URL=.*|DATABASE_URL=sqlite:///$APP_DIR/app/wishaday.db|" "$env_file"
+        log_info "Fixed malformed DATABASE_URL (https issue)"
     fi
     
-    # Ensure DATABASE_URL uses absolute path for production
-    if grep -q "DATABASE_URL=sqlite:///\./wishaday.db" "$env_file" 2>/dev/null; then
+    # Fix relative path DATABASE_URL to absolute path
+    if grep -q "DATABASE_URL=sqlite:///\./app/wishaday.db" "$env_file" 2>/dev/null; then
         sed -i "s|^DATABASE_URL=.*|DATABASE_URL=sqlite:///$APP_DIR/app/wishaday.db|" "$env_file"
         log_info "Updated DATABASE_URL to use absolute path"
+    fi
+    
+    # Fix relative path without leading ./
+    if grep -q "DATABASE_URL=sqlite:///app/wishaday.db" "$env_file" 2>/dev/null && ! grep -q "DATABASE_URL=sqlite:///$APP_DIR" "$env_file" 2>/dev/null; then
+        sed -i "s|^DATABASE_URL=.*|DATABASE_URL=sqlite:///$APP_DIR/app/wishaday.db|" "$env_file"
+        log_info "Updated relative DATABASE_URL to absolute path"
+    fi
+    
+    # Ensure DATABASE_URL uses absolute path for any sqlite relative reference
+    if grep -q "DATABASE_URL=sqlite:///\." "$env_file" 2>/dev/null; then
+        sed -i "s|^DATABASE_URL=.*|DATABASE_URL=sqlite:///$APP_DIR/app/wishaday.db|" "$env_file"
+        log_info "Fixed relative DATABASE_URL path"
     fi
     
     # Update BASE_URL if needed
@@ -365,6 +377,10 @@ fix_env_file() {
     
     # Ensure DEBUG is false for production
     sed -i 's|^DEBUG=.*|DEBUG=false|' "$env_file"
+    
+    # Verify the final DATABASE_URL
+    local final_db_url=$(grep "^DATABASE_URL=" "$env_file" | cut -d'=' -f2-)
+    log_info "Final DATABASE_URL: $final_db_url"
 }
 
 # Initialize database
@@ -373,21 +389,48 @@ init_database() {
     
     cd "$APP_DIR"
     
-    # Create database file and directory
+    # Ensure .env file has correct DATABASE_URL first
+    fix_env_file
+    
+    # Create database directory if it doesn't exist
     mkdir -p "$(dirname "$APP_DIR/app/wishaday.db")"
-    touch "$APP_DIR/app/wishaday.db"
     
-    # Initialize database
+    # Remove any existing problematic database file
+    if [[ -f "$APP_DIR/app/wishaday.db" ]]; then
+        log_info "Removing existing database file for clean initialization"
+        rm -f "$APP_DIR/app/wishaday.db"
+    fi
+    
+    # Initialize database with proper error handling
     sudo -u "$WISHADAY_USER" bash -c "
+        cd '$APP_DIR'
         source venv/bin/activate
-        python -c 'from app.database import init_db; init_db()'
-    " || log_warn "Database initialization failed, will retry on service start"
+        export PYTHONPATH='$APP_DIR'
+        python -c 'from app.database import init_db; init_db(); print(\"Database initialized successfully\")'
+    " || {
+        log_error "Database initialization failed, trying alternative method..."
+        # Try creating empty database file first
+        touch "$APP_DIR/app/wishaday.db"
+        chown "$WISHADAY_USER:$WISHADAY_GROUP" "$APP_DIR/app/wishaday.db"
+        chmod 664 "$APP_DIR/app/wishaday.db"
+        
+        # Try again
+        sudo -u "$WISHADAY_USER" bash -c "
+            cd '$APP_DIR'
+            source venv/bin/activate
+            export PYTHONPATH='$APP_DIR'
+            python -c 'from app.database import init_db; init_db(); print(\"Database initialized successfully\")'
+        " || log_warn "Database initialization failed, will retry on service start"
+    }
     
-    # Set permissions
-    chown "$WISHADAY_USER:$WISHADAY_GROUP" "$APP_DIR/app/wishaday.db"
-    chmod 664 "$APP_DIR/app/wishaday.db"
-    
-    log_success "Database initialized"
+    # Set proper permissions
+    if [[ -f "$APP_DIR/app/wishaday.db" ]]; then
+        chown "$WISHADAY_USER:$WISHADAY_GROUP" "$APP_DIR/app/wishaday.db"
+        chmod 664 "$APP_DIR/app/wishaday.db"
+        log_success "Database initialized and permissions set"
+    else
+        log_warn "Database file not created, service may create it on first start"
+    fi
 }
 
 # Create systemd service
@@ -932,6 +975,13 @@ diagnose_and_fix() {
         log_warn "Database file missing, creating..."
         issues_found=$((issues_found + 1))
         init_database
+    else
+        # Check if database is accessible
+        if ! sudo -u "$WISHADAY_USER" bash -c "cd '$APP_DIR' && source venv/bin/activate && python -c 'from app.database import SessionLocal; db = SessionLocal(); db.close()'" 2>/dev/null; then
+            log_warn "Database not accessible, reinitializing..."
+            issues_found=$((issues_found + 1))
+            init_database
+        fi
     fi
     
     # Check environment file
@@ -944,6 +994,13 @@ diagnose_and_fix() {
         # Check for common issues in .env
         if grep -q "DATABASE_URL=https" "$APP_DIR/.env" 2>/dev/null; then
             log_warn "Malformed DATABASE_URL found, fixing..."
+            issues_found=$((issues_found + 1))
+            fix_env_file
+        fi
+        
+        # Check for relative path issues
+        if grep -q "DATABASE_URL=sqlite:///\." "$APP_DIR/.env" 2>/dev/null; then
+            log_warn "Relative DATABASE_URL path found, fixing..."
             issues_found=$((issues_found + 1))
             fix_env_file
         fi
@@ -1348,7 +1405,7 @@ show_help() {
     echo "  WISHADAY_DOMAIN    - Domain name (default: wishaday.hareeshworks.in)"
     echo "  WISHADAY_PORT      - Backend port (default: 8000)"
     echo "  GIT_REPO          - Git repository URL for auto-clone"
-    echo "  NODE_VERSION      - Node.js version to install (default: 18)"
+    echo "  NODE_VERSION      - Node.js version to install (default: 20)"
     echo ""
 }
 
