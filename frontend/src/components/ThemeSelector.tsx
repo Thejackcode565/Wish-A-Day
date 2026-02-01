@@ -1,7 +1,20 @@
 import { cn } from "@/lib/utils";
-import { Sparkles, Heart, PartyPopper, Star } from "lucide-react";
+import { 
+  Sparkles, Heart, PartyPopper, Star, 
+  Cake, Gift, Flower2, Music, Calendar, Award, HeartHandshake 
+} from "lucide-react";
 
-export type WishTheme = "default" | "birthday" | "love" | "celebration";
+export type WishTheme = 
+  | "default" 
+  | "birthday" 
+  | "love" 
+  | "celebration" 
+  | "wedding" 
+  | "valentine" 
+  | "congratulations" 
+  | "appreciation" 
+  | "festival" 
+  | "event";
 
 interface ThemeSelectorProps {
   value: WishTheme;
@@ -13,11 +26,17 @@ const themes: { value: WishTheme; label: string; icon: React.ComponentType<{ cla
   { value: "birthday", label: "Birthday", icon: PartyPopper },
   { value: "love", label: "Love", icon: Heart },
   { value: "celebration", label: "Celebration", icon: Star },
+  { value: "wedding", label: "Wedding", icon: Flower2 },
+  { value: "valentine", label: "Valentine", icon: HeartHandshake },
+  { value: "congratulations", label: "Congrats", icon: Award },
+  { value: "appreciation", label: "Thanks", icon: Gift },
+  { value: "festival", label: "Festival", icon: Music },
+  { value: "event", label: "Event", icon: Calendar },
 ];
 
 export function ThemeSelector({ value, onChange }: ThemeSelectorProps) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
       {themes.map((theme) => {
         const Icon = theme.icon;
         const isSelected = value === theme.value;
@@ -47,7 +66,7 @@ export function ThemeSelector({ value, onChange }: ThemeSelectorProps) {
             </div>
             <span
               className={cn(
-                "relative z-10 text-sm font-medium transition-colors",
+                "relative z-10 text-xs font-medium transition-colors text-center",
                 isSelected ? "text-foreground" : "text-muted-foreground"
               )}
             >

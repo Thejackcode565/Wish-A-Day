@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { ImageUploader } from "@/components/ImageUploader";
 import { ExpirySelector, ExpiryType } from "@/components/ExpirySelector";
 import { ThemeSelector, WishTheme } from "@/components/ThemeSelector";
+import { CelebrationItems, CelebrationItem } from "@/components/CelebrationItems";
 import { ShareLink } from "@/components/ShareLink";
 import { WishCard } from "@/components/WishCard";
 import { createWish, uploadImage } from "@/services/api";
@@ -25,6 +26,7 @@ const CreateWish = () => {
   const [expiresAt, setExpiresAt] = useState<Date>();
   const [maxViews, setMaxViews] = useState<number>();
   const [images, setImages] = useState<File[]>([]);
+  const [celebrationItems, setCelebrationItems] = useState<CelebrationItem[]>([]);
   
   // UI state
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -147,6 +149,7 @@ const CreateWish = () => {
                 message={message || "Your message will appear here..."}
                 theme={theme}
                 images={images.map((f) => URL.createObjectURL(f))}
+                celebrationItems={celebrationItems}
               />
             </div>
           ) : (
@@ -188,14 +191,20 @@ const CreateWish = () => {
                 <ThemeSelector value={theme} onChange={setTheme} />
               </div>
 
-              {/* Images */}
+              {/* Celebration Items */}
               <div className="space-y-3 animate-slide-up" style={{ animationDelay: "0.15s" }}>
+                <Label>Celebration Items (optional)</Label>
+                <CelebrationItems items={celebrationItems} onChange={setCelebrationItems} />
+              </div>
+
+              {/* Images */}
+              <div className="space-y-3 animate-slide-up" style={{ animationDelay: "0.2s" }}>
                 <Label>Images (optional)</Label>
                 <ImageUploader images={images} onImagesChange={setImages} />
               </div>
 
               {/* Expiry */}
-              <div className="space-y-3 animate-slide-up" style={{ animationDelay: "0.2s" }}>
+              <div className="space-y-3 animate-slide-up" style={{ animationDelay: "0.25s" }}>
                 <Label>Expiry</Label>
                 <ExpirySelector
                   expiryType={expiryType}
@@ -208,7 +217,7 @@ const CreateWish = () => {
               </div>
 
               {/* Submit */}
-              <div className="pt-4 animate-slide-up" style={{ animationDelay: "0.25s" }}>
+              <div className="pt-4 animate-slide-up" style={{ animationDelay: "0.3s" }}>
                 <Button
                   type="submit"
                   variant="hero"
