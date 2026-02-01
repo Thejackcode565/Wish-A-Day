@@ -53,6 +53,24 @@
     --theme-celebration-from: 45 95% 55%;
     --theme-celebration-to: 25 90% 60%;
 
+    --theme-wedding-from: 340 30% 85%;
+    --theme-wedding-to: 45 50% 90%;
+
+    --theme-valentine-from: 340 80% 60%;
+    --theme-valentine-to: 350 85% 70%;
+
+    --theme-congratulations-from: 45 90% 55%;
+    --theme-congratulations-to: 35 95% 65%;
+
+    --theme-appreciation-from: 160 60% 50%;
+    --theme-appreciation-to: 180 55% 60%;
+
+    --theme-festival-from: 280 70% 55%;
+    --theme-festival-to: 320 75% 60%;
+
+    --theme-event-from: 210 70% 55%;
+    --theme-event-to: 230 65% 65%;
+
     /* Gradients */
     --gradient-hero: linear-gradient(135deg, hsl(12 76% 61% / 0.9), hsl(25 90% 70% / 0.9), hsl(40 90% 75% / 0.8));
     --gradient-card: linear-gradient(180deg, hsl(30 50% 99%), hsl(25 60% 96%));
@@ -191,6 +209,36 @@
   .theme-celebration {
     --theme-from: var(--theme-celebration-from);
     --theme-to: var(--theme-celebration-to);
+  }
+
+  .theme-wedding {
+    --theme-from: var(--theme-wedding-from);
+    --theme-to: var(--theme-wedding-to);
+  }
+
+  .theme-valentine {
+    --theme-from: var(--theme-valentine-from);
+    --theme-to: var(--theme-valentine-to);
+  }
+
+  .theme-congratulations {
+    --theme-from: var(--theme-congratulations-from);
+    --theme-to: var(--theme-congratulations-to);
+  }
+
+  .theme-appreciation {
+    --theme-from: var(--theme-appreciation-from);
+    --theme-to: var(--theme-appreciation-to);
+  }
+
+  .theme-festival {
+    --theme-from: var(--theme-festival-from);
+    --theme-to: var(--theme-festival-to);
+  }
+
+  .theme-event {
+    --theme-from: var(--theme-event-from);
+    --theme-to: var(--theme-event-to);
   }
 
   .theme-gradient {
