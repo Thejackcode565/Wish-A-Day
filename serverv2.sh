@@ -35,6 +35,8 @@
 #   backup      - Create system backup
 #   restore     - Restore from backup
 #   monitor     - Real-time monitoring
+#   clean       - Clean build artifacts and temporary files
+#   rebuild     - Complete rebuild (clean + install + build)
 #   help        - Show this help message
 ################################################################################
 
@@ -1461,6 +1463,175 @@ real_time_monitor() {
     done
 }
 
+# Clean build artifacts and temporary files
+clean_environment() {
+    log_header "Cleaning Environment"
+    echo ""
+    
+    # Stop services first
+    log_step "Stopping services"
+    systemctl stop "$SERVICE_NAME" 2>/dev/null || true
+    
+    # Kill any remaining processes on the port
+    if netstat -tlnp | grep -q ":$WISHADAY_PORT "; then
+        log_warn "Killing processes on port $WISHADAY_PORT"
+        lsof -ti:"$WISHADAY_PORT" | xargs kill -9 2>/dev/null || true
+        sleep 2
+    fi
+    
+    cd "$APP_DIR" || {
+        log_error "Application directory not found: $APP_DIR"
+        return 1
+    }
+    
+    # Clean Python artifacts
+    log_step "Cleaning Python artifacts"
+    find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+    find . -type f -name "*.pyc" -delete 2>/dev/null || true
+    find . -type f -name "*.pyo" -delete 2>/dev/null || true
+    find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
+    rm -rf build/ dist/ .pytest_cache/ 2>/dev/null || true
+    
+    # Clean virtual environment
+    log_step "Removing virtual environment"
+    if [[ -d "venv" ]]; then
+        rm -rf venv
+        log_info "Removed Python virtual environment"
+    fi
+    
+    # Clean frontend artifacts
+    if [[ -d "frontend" ]]; then
+        log_step "Cleaning frontend artifacts"
+        cd frontend
+        
+        # Remove node_modules and build artifacts
+        rm -rf node_modules/ 2>/dev/null || true
+        rm -rf dist/ 2>/dev/null || true
+        rm -rf build/ 2>/dev/null || true
+        rm -rf .next/ 2>/dev/null || true
+        rm -rf .nuxt/ 2>/dev/null || true
+        rm -f package-lock.json 2>/dev/null || true
+        rm -f yarn.lock 2>/dev/null || true
+        
+        log_info "Cleaned frontend build artifacts"
+        cd ..
+    fi
+    
+    # Clean logs (keep recent ones)
+    log_step "Cleaning old logs"
+    if [[ -d "logs" ]]; then
+        find logs/ -name "*.log" -mtime +7 -delete 2>/dev/null || true
+        find logs/ -name "*.log.*" -mtime +7 -delete 2>/dev/null || true
+        log_info "Cleaned old log files"
+    fi
+    
+    # Clean temporary files
+    log_step "Cleaning temporary files"
+    rm -rf /tmp/wishaday_* 2>/dev/null || true
+    rm -rf /tmp/test_image_* 2>/dev/null || true
+    
+    # Clean systemd journal for this service (optional)
+    log_step "Cleaning service logs"
+    journalctl --vacuum-time=7d --quiet 2>/dev/null || true
+    
+    # Clean pip cache
+    log_step "Cleaning pip cache"
+    sudo -u "$WISHADAY_USER" bash -c "pip cache purge" 2>/dev/null || true
+    
+    # Clean npm cache
+    if command -v npm >/dev/null 2>&1; then
+        log_step "Cleaning npm cache"
+        sudo -u "$WISHADAY_USER" bash -c "npm cache clean --force" 2>/dev/null || true
+    fi
+    
+    # Reset file permissions
+    log_step "Resetting file permissions"
+    chown -R "$WISHADAY_USER:$WISHADAY_GROUP" "$APP_DIR"
+    
+    log_success "Environment cleaned successfully!"
+    log_info "Removed:"
+    log_info "  - Python virtual environment and cache files"
+    log_info "  - Frontend node_modules and build artifacts"
+    log_info "  - Old log files (>7 days)"
+    log_info "  - Temporary files"
+    log_info "  - Package manager caches"
+}
+
+# Complete rebuild (clean + install + build)
+rebuild_application() {
+    log_header "Complete Application Rebuild"
+    echo ""
+    
+    log_info "This will perform a complete rebuild of the application:"
+    log_info "1. Clean all build artifacts and caches"
+    log_info "2. Reinstall Python dependencies"
+    log_info "3. Rebuild frontend"
+    log_info "4. Reconfigure services"
+    log_info "5. Restart all services"
+    echo ""
+    
+    # Confirmation prompt
+    read -p "Are you sure you want to proceed? (y/N): " -n 1 -r
+    echo ""
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        log_info "Rebuild cancelled"
+        return 0
+    fi
+    
+    # Step 1: Clean environment
+    clean_environment
+    
+    # Step 2: Setup Python environment
+    log_step "Setting up fresh Python environment"
+    setup_python_env
+    
+    # Step 3: Configure environment
+    log_step "Configuring environment"
+    configure_environment
+    
+    # Step 4: Initialize database
+    log_step "Initializing database"
+    init_database
+    
+    # Step 5: Build frontend
+    if [[ -d "$APP_DIR/frontend" ]]; then
+        log_step "Building frontend from scratch"
+        build_frontend
+    fi
+    
+    # Step 6: Fix all permissions
+    log_step "Setting proper permissions"
+    fix_all_permissions
+    
+    # Step 7: Reconfigure services
+    log_step "Reconfiguring services"
+    create_systemd_service
+    systemctl daemon-reload
+    
+    # Step 8: Start services
+    log_step "Starting services"
+    systemctl start "$SERVICE_NAME"
+    
+    # Wait for services to start
+    show_progress 5 "Waiting for services to start"
+    
+    # Step 9: Test the rebuild
+    log_step "Testing rebuilt application"
+    if test_connectivity; then
+        log_success "Rebuild completed successfully!"
+        echo ""
+        log_info "Application has been completely rebuilt and is running"
+        log_info "You can access it at: http://$WISHADAY_DOMAIN"
+        
+        # Show final status
+        show_system_status
+    else
+        log_error "Rebuild completed but application is not responding correctly"
+        log_info "Check logs for issues: sudo ./serverv2.sh logs"
+        return 1
+    fi
+}
+
 # Fix image upload 500 errors
 fix_image_upload_500() {
     log_header "Fixing Image Upload 500 Errors"
@@ -1712,12 +1883,17 @@ print(\"OK\")
         if [[ -n "$wish_slug" ]]; then
             log_info "Test wish created with slug: $wish_slug"
             
-            # Create a small test image
-            python3 -c "
+            # Create a small test image using the virtual environment
+            sudo -u "$WISHADAY_USER" bash -c "
+                cd '$APP_DIR'
+                source venv/bin/activate
+                python3 -c '
 from PIL import Image
-img = Image.new('RGB', (100, 100), color='red')
-img.save('/tmp/test_image_upload.jpg', 'JPEG')
-"
+img = Image.new(\"RGB\", (100, 100), color=\"red\")
+img.save(\"/tmp/test_image_upload.jpg\", \"JPEG\")
+print(\"Test image created\")
+'
+            "
             
             # Test image upload
             local upload_response=$(curl -s -X POST "http://127.0.0.1:$WISHADAY_PORT/api/wishes/$wish_slug/images" \
@@ -1793,6 +1969,8 @@ show_help() {
     echo "  fix-env     - Fix environment configuration"
     echo "  fix-upload  - Fix image upload 500 errors"
     echo "  update      - Update application from git"
+    echo "  clean       - Clean build artifacts and temporary files"
+    echo "  rebuild     - Complete rebuild (clean + install + build)"
     echo ""
     echo -e "${BOLD}Monitoring:${NC}"
     echo "  logs        - Show recent logs"
@@ -1809,6 +1987,8 @@ show_help() {
     echo "  sudo ./serverv2.sh install    # Install application"
     echo "  sudo ./serverv2.sh deploy     # Deploy to production"
     echo "  sudo ./serverv2.sh diagnose   # Auto-fix issues"
+    echo "  sudo ./serverv2.sh clean      # Clean build artifacts"
+    echo "  sudo ./serverv2.sh rebuild    # Complete rebuild"
     echo "  sudo ./serverv2.sh monitor    # Real-time monitoring"
     echo ""
     echo -e "${BOLD}Environment Variables:${NC}"
@@ -1903,6 +2083,14 @@ main() {
             ;;
         "monitor")
             real_time_monitor
+            ;;
+        "clean")
+            check_root
+            clean_environment
+            ;;
+        "rebuild")
+            check_root
+            rebuild_application
             ;;
         "help"|*)
             show_help

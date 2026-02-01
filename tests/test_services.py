@@ -58,22 +58,6 @@ class TestSlugService:
 class TestExpiryService:
     """Tests for expiry checking service."""
     
-    def test_no_expiry(self):
-        """Test wish with no expiry settings."""
-        wish = Wish(
-            id=1,
-            slug="test123",
-            message="Test message",
-            expires_at=None,
-            max_views=None,
-            current_views=0
-        )
-        
-        result = check_expiry(wish)
-        
-        assert result.is_expired is False
-        assert result.expiry_type == ExpiryType.NONE
-    
     def test_time_based_expiry_not_expired(self):
         """Test time-based expiry when not yet expired."""
         wish = Wish(
@@ -88,7 +72,7 @@ class TestExpiryService:
         result = check_expiry(wish)
         
         assert result.is_expired is False
-        assert result.expiry_type == ExpiryType.NONE
+        assert result.expiry_type == ExpiryType.TIME
     
     def test_time_based_expired(self):
         """Test time-based expiry when expired."""
@@ -120,6 +104,7 @@ class TestExpiryService:
         result = check_expiry(wish)
         
         assert result.is_expired is False
+        assert result.expiry_type == ExpiryType.VIEWS
     
     def test_view_based_expired(self):
         """Test view-based expiry when max views reached."""

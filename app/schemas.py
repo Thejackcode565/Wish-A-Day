@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, model_validator
 
 
 class WishCreate(BaseModel):
@@ -14,6 +14,13 @@ class WishCreate(BaseModel):
     theme: str = Field(default="default", max_length=50)
     expires_at: Optional[datetime] = None
     max_views: Optional[int] = Field(None, ge=1, le=1000)
+    
+    @model_validator(mode='after')
+    def validate_expiry(self):
+        """Ensure either expires_at or max_views is provided."""
+        if self.expires_at is None and self.max_views is None:
+            raise ValueError("Either expires_at or max_views must be provided")
+        return self
     
     model_config = ConfigDict(json_schema_extra={
         "example": {

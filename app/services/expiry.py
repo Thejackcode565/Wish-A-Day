@@ -11,7 +11,6 @@ class ExpiryType(str, Enum):
     """Types of expiry."""
     TIME = "time"
     VIEWS = "views"
-    NONE = "none"
 
 
 class ExpiryResult:
@@ -61,7 +60,12 @@ def check_expiry(wish: Wish) -> ExpiryResult:
             reason=f"Maximum views reached ({wish.current_views}/{wish.max_views})"
         )
     
-    return ExpiryResult(is_expired=False, expiry_type=ExpiryType.NONE)
+    # If we reach here, the wish is not expired
+    # Determine which type of expiry is configured
+    if wish.expires_at:
+        return ExpiryResult(is_expired=False, expiry_type=ExpiryType.TIME)
+    else:
+        return ExpiryResult(is_expired=False, expiry_type=ExpiryType.VIEWS)
 
 
 def should_soft_delete(wish: Wish) -> bool:
