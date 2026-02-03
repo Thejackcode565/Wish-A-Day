@@ -32,6 +32,10 @@ class Wish(Base):
     deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     ip_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     
+    # Sender information
+    sender_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    sender_message: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    
     # Relationship to images
     images: Mapped[List["WishImage"]] = relationship(
         "WishImage", 

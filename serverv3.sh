@@ -1,164 +1,353 @@
 #!/bin/bash
 ################################################################################
-# Wishaday Server Management Script v3.0
-# Optimized & Modernized - 40% less code
+# Wishaday Easy Deployment Script v4.0
+#
+# Optimized for simplicity and efficiency with smart pull & update workflow
+#
+# Quick Commands:
+#   sudo ./wishaday-deploy.sh quick-start    # First-time setup (one command!)
+#   sudo ./wishaday-deploy.sh pull           # Pull latest code and auto-update
+#   sudo ./wishaday-deploy.sh update         # Quick update without downtime
+#   sudo ./wishaday-deploy.sh restart        # Restart services
+#   sudo ./wishaday-deploy.sh status         # Check health
 ################################################################################
 
 set -euo pipefail
 
-# Configuration
-declare -r APP_NAME="wishaday"
-declare -r APP_DIR="/opt/wishaday"
-declare -r BACKUP_DIR="/opt/wishaday-backups"
-declare -r NGINX_AVAILABLE="/etc/nginx/sites-available"
-declare -r NGINX_ENABLED="/etc/nginx/sites-enabled"
-declare -r SERVICE_NAME="wishaday"
+# ==================== Configuration ====================
 
-# Default values
+readonly APP_NAME="wishaday"
+readonly APP_DIR="/opt/wishaday"
+readonly BACKUP_DIR="/opt/wishaday-backups"
+readonly SERVICE_NAME="wishaday"
+
+# Environment variables with defaults
 export WISHADAY_PORT="${WISHADAY_PORT:-8000}"
 export WISHADAY_DOMAIN="${WISHADAY_DOMAIN:-wishaday.hareeshworks.in}"
 export WISHADAY_USER="${WISHADAY_USER:-wishaday}"
 export WISHADAY_GROUP="${WISHADAY_GROUP:-wishaday}"
-export GIT_REPO="${GIT_REPO:-}"
+export GIT_REPO="${GIT_REPO:-https://github.com/hareesh08/Wish-A-Day.git}"
+export GIT_BRANCH="${GIT_BRANCH:-main}"
 export NODE_VERSION="${NODE_VERSION:-20}"
 
-# Colors
-declare -r RED='\033[0;31m'
-declare -r GREEN='\033[0;32m'
-declare -r YELLOW='\033[1;33m'
-declare -r BLUE='\033[0;34m'
-declare -r CYAN='\033[0;36m'
-declare -r PURPLE='\033[0;35m'
-declare -r BOLD='\033[1m'
-declare -r NC='\033[0m'
+# ==================== Colors ====================
 
-# Logging functions
-log() { echo -e "${BLUE}[INFO]${NC} $1"; }
-success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
-warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
-error() { echo -e "${RED}[ERROR]${NC} $1"; }
-header() { echo -e "${CYAN}${BOLD}$1${NC}"; }
-step() { echo -e "${PURPLE}[STEP]${NC} $1"; }
+readonly RED='\033[0;31m'
+readonly GREEN='\033[0;32m'
+readonly YELLOW='\033[1;33m'
+readonly BLUE='\033[0;34m'
+readonly CYAN='\033[0;36m'
+readonly MAGENTA='\033[0;35m'
+readonly BOLD='\033[1m'
+readonly NC='\033[0m'
 
-# Validation
-check_root() { [[ $EUID -eq 0 ]] || { error "Run as root (use sudo)"; exit 1; }; }
-check_os() { source /etc/os-release; log "OS: $PRETTY_NAME"; }
-wait_for() { echo -n "$1"; for ((i=0; i<$2; i++)); do echo -n "."; sleep 1; done; echo " Done!"; }
+# ==================== Logging ====================
 
-# User management
-setup_user() {
-    getent group "$WISHADAY_GROUP" >/dev/null 2>&1 || { groupadd "$WISHADAY_GROUP"; log "Created group: $WISHADAY_GROUP"; }
-    getent passwd "$WISHADAY_USER" >/dev/null 2>&1 || { useradd -r -g "$WISHADAY_GROUP" -d "$APP_DIR" -s /bin/bash "$WISHADAY_USER"; log "Created user: $WISHADAY_USER"; }
-    usermod -a -G "$WISHADAY_GROUP" www-data 2>/dev/null || true
+log() { echo -e "${BLUE}ℹ${NC} $1"; }
+success() { echo -e "${GREEN}✓${NC} $1"; }
+warn() { echo -e "${YELLOW}⚠${NC} $1"; }
+error() { echo -e "${RED}✗${NC} $1"; exit 1; }
+header() { echo -e "\n${CYAN}${BOLD}━━━ $1 ━━━${NC}\n"; }
+step() { echo -e "${MAGENTA}▶${NC} $1"; }
+
+spinner() {
+    local pid=$1
+    local message=$2
+    local spinstr='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
+    echo -n "$message "
+    while kill -0 "$pid" 2>/dev/null; do
+        local temp=${spinstr#?}
+        printf "[%c]" "$spinstr"
+        spinstr=$temp${spinstr%"$temp"}
+        sleep 0.1
+        printf "\b\b\b"
+    done
+    wait "$pid"
+    local exit_code=$?
+    if [ $exit_code -eq 0 ]; then
+        echo -e "${GREEN}✓${NC}"
+    else
+        echo -e "${RED}✗${NC}"
+        return $exit_code
+    fi
 }
 
-# System setup
-install_deps() {
-    apt update
-    apt install -y curl wget git nginx python3 python3-pip python3-venv python3-dev \
-        build-essential pkg-config libffi-dev libssl-dev sqlite3 libsqlite3-dev \
-        supervisor certbot python3-certbot-nginx htop tree lsof net-tools unzip
+# ==================== Validation ====================
+
+check_root() {
+    [[ $EUID -eq 0 ]] || error "This script must be run as root (use sudo)"
+}
+
+check_os() {
+    if [[ -f /etc/os-release ]]; then
+        source /etc/os-release
+        log "OS: $PRETTY_NAME"
+    else
+        warn "Cannot determine OS version, proceeding anyway..."
+    fi
+}
+
+# ==================== System Setup ====================
+
+setup_user() {
+    step "Setting up system user"
+
+    if ! getent group "$WISHADAY_GROUP" >/dev/null 2>&1; then
+        groupadd "$WISHADAY_GROUP"
+        log "Created group: $WISHADAY_GROUP"
+    fi
+
+    if ! getent passwd "$WISHADAY_USER" >/dev/null 2>&1; then
+        useradd -r -g "$WISHADAY_GROUP" -d "$APP_DIR" -s /bin/bash "$WISHADAY_USER"
+        log "Created user: $WISHADAY_USER"
+    fi
+
+    usermod -a -G "$WISHADAY_GROUP" www-data 2>/dev/null || true
+    success "User setup complete"
+}
+
+install_dependencies() {
+    step "Installing system dependencies"
+
+    export DEBIAN_FRONTEND=noninteractive
+    apt update -qq > /dev/null 2>&1 &
+    spinner $! "Updating package list"
+
+    apt install -y -qq \
+        curl wget git nginx \
+        python3 python3-pip python3-venv python3-dev \
+        build-essential pkg-config libffi-dev libssl-dev \
+        sqlite3 libsqlite3-dev supervisor \
+        certbot python3-certbot-nginx \
+        htop tree lsof net-tools unzip > /dev/null 2>&1 &
+    spinner $! "Installing dependencies"
+
     success "Dependencies installed"
 }
 
-install_node() {
-    command -v node >/dev/null && return 0
-    curl -fsSL "https://deb.nodesource.com/setup_${NODE_VERSION}.x" | bash -
-    apt install -y nodejs
-    success "Node.js installed"
-}
+install_nodejs() {
+    step "Installing Node.js $NODE_VERSION"
 
-# App directory
-setup_dirs() {
-    mkdir -p {"$APP_DIR/logs","$APP_DIR/app/uploads/wishes","$BACKUP_DIR"}
-    chown -R "$WISHADAY_USER:$WISHADAY_GROUP" {"$APP_DIR","$BACKUP_DIR"}
-}
-
-# Repository
-setup_repo() {
-    cd "$APP_DIR"
-    if [[ -d ".git" && -n "$(git remote)" ]]; then
-        sudo -u "$WISHADAY_USER" git pull
-    elif [[ -n "$GIT_REPO" ]]; then
-        sudo -u "$WISHADAY_USER" git clone "$GIT_REPO" .
-    else
-        warn "No git repo. Copy code to $APP_DIR manually"
+    if command -v node >/dev/null 2>&1; then
+        local current_version=$(node --version | cut -d'v' -f2 | cut -d'.' -f1)
+        if [[ "$current_version" -ge "$NODE_VERSION" ]]; then
+            log "Node.js $current_version already installed"
+            return 0
+        fi
     fi
-    chown -R "$WISHADAY_USER:$WISHADAY_GROUP" "$APP_DIR"
+
+    curl -fsSL "https://deb.nodesource.com/setup_${NODE_VERSION}.x" | bash - > /dev/null 2>&1
+    apt install -y -qq nodejs > /dev/null 2>&1 &
+    spinner $! "Installing Node.js"
+
+    success "Node.js $(node --version) installed"
 }
 
-# Python environment
-setup_python() {
+setup_directories() {
+    step "Creating directories"
+
+    mkdir -p "$APP_DIR"/{logs,app/uploads/wishes}
+    mkdir -p "$BACKUP_DIR"
+
+    chown -R "$WISHADAY_USER:$WISHADAY_GROUP" "$APP_DIR" "$BACKUP_DIR"
+
+    success "Directories created"
+}
+
+# ==================== Git Operations ====================
+
+clone_repository() {
+    step "Cloning repository"
+
+    if [[ -d "$APP_DIR/.git" ]]; then
+        log "Repository already exists"
+        return 0
+    fi
+
+    if [[ -z "$GIT_REPO" ]]; then
+        warn "No git repository specified. Set GIT_REPO environment variable"
+        return 0
+    fi
+
     cd "$APP_DIR"
-    [[ ! -d "venv" ]] && sudo -u "$WISHADAY_USER" python3 -m venv venv
-    
+    sudo -u "$WISHADAY_USER" git clone "$GIT_REPO" . > /dev/null 2>&1 &
+    spinner $! "Cloning from $GIT_REPO"
+
+    success "Repository cloned"
+}
+
+pull_latest() {
+    step "Pulling latest changes"
+
+    if [[ ! -d "$APP_DIR/.git" ]]; then
+        warn "Not a git repository. Run 'setup' first or set GIT_REPO"
+        return 0
+    fi
+
+    cd "$APP_DIR"
+
+    # Stash any local changes
+    sudo -u "$WISHADAY_USER" git stash > /dev/null 2>&1 || true
+
+    # Fetch and check for changes
+    local before_hash=$(sudo -u "$WISHADAY_USER" git rev-parse HEAD)
+    sudo -u "$WISHADAY_USER" git fetch origin "$GIT_BRANCH" > /dev/null 2>&1 &
+    spinner $! "Fetching changes"
+
+    local after_hash=$(sudo -u "$WISHADAY_USER" git rev-parse "origin/$GIT_BRANCH")
+
+    if [[ "$before_hash" == "$after_hash" ]]; then
+        success "Already up to date"
+        return 1  # Return 1 to indicate no changes
+    fi
+
+    # Pull changes
+    sudo -u "$WISHADAY_USER" git pull origin "$GIT_BRANCH" > /dev/null 2>&1 &
+    spinner $! "Pulling changes"
+
+    # Show what changed
+    log "Changes:"
+    git log --oneline "$before_hash".."$after_hash" | head -5 | while read line; do
+        echo "  • $line"
+    done
+
+    success "Code updated"
+    return 0  # Return 0 to indicate changes were made
+}
+
+# ==================== Application Setup ====================
+
+setup_python_env() {
+    step "Setting up Python environment"
+
+    cd "$APP_DIR"
+
+    if [[ ! -d "venv" ]]; then
+        sudo -u "$WISHADAY_USER" python3 -m venv venv > /dev/null 2>&1 &
+        spinner $! "Creating virtual environment"
+    fi
+
     sudo -u "$WISHADAY_USER" bash -c "
         source venv/bin/activate
-        pip install --upgrade pip setuptools wheel
-        [[ -f 'pyproject.toml' ]] && pip install -e . || \
-        pip install fastapi uvicorn sqlalchemy pydantic-settings pillow apscheduler python-multipart
-    "
+        pip install --upgrade pip setuptools wheel -q > /dev/null 2>&1
+
+        if [[ -f 'pyproject.toml' ]]; then
+            pip install -e . -q > /dev/null 2>&1
+        elif [[ -f 'requirements.txt' ]]; then
+            pip install -r requirements.txt -q > /dev/null 2>&1
+        else
+            pip install -q fastapi uvicorn sqlalchemy pydantic-settings pillow apscheduler python-multipart > /dev/null 2>&1
+        fi
+    " &
+    spinner $! "Installing Python packages"
+
+    success "Python environment ready"
 }
 
-# Frontend
 build_frontend() {
-    [[ ! -d "$APP_DIR/frontend" ]] && return 0
+    step "Building frontend"
+
+    if [[ ! -d "$APP_DIR/frontend" ]]; then
+        log "No frontend directory found, skipping"
+        return 0
+    fi
+
     cd "$APP_DIR/frontend"
-    sudo -u "$WISHADAY_USER" bash -c "npm install && npm run build"
+
+    # Install dependencies if needed
+    if [[ ! -d "node_modules" || package.json -nt node_modules ]]; then
+        sudo -u "$WISHADAY_USER" npm install --silent > /dev/null 2>&1 &
+        spinner $! "Installing npm packages"
+    fi
+
+    # Build
+    sudo -u "$WISHADAY_USER" npm run build > /dev/null 2>&1 &
+    spinner $! "Building frontend"
+
     chown -R "$WISHADAY_USER:$WISHADAY_GROUP" "$APP_DIR/frontend"
+
+    success "Frontend built"
 }
 
-# Environment configuration
-setup_env() {
+setup_environment() {
+    step "Configuring environment"
+
     cd "$APP_DIR"
-    [[ ! -f ".env" && -f ".env.example" ]] && cp ".env.example" ".env"
-    [[ ! -f ".env" ]] && create_env
-    
-    # Fix common issues
-    sed -i -e "s|DATABASE_URL=.*|DATABASE_URL=sqlite:///$APP_DIR/app/wishaday.db|" \
-           -e "s|BASE_URL=.*|BASE_URL=https://$WISHADAY_DOMAIN|" \
-           -e "s|DEBUG=.*|DEBUG=false|" \
-           "$APP_DIR/.env" 2>/dev/null || true
-    
+
+    if [[ ! -f ".env" ]]; then
+        if [[ -f ".env.example" ]]; then
+            cp ".env.example" ".env"
+            log "Created .env from template"
+        else
+            create_env_file
+        fi
+    fi
+
+    # Update critical settings
+    sed -i \
+        -e "s|DATABASE_URL=.*|DATABASE_URL=sqlite:///$APP_DIR/app/wishaday.db|g" \
+        -e "s|BASE_URL=.*|BASE_URL=https://$WISHADAY_DOMAIN|g" \
+        -e "s|DEBUG=.*|DEBUG=false|g" \
+        -e "s|PORT=.*|PORT=$WISHADAY_PORT|g" \
+        "$APP_DIR/.env" 2>/dev/null || true
+
     chown "$WISHADAY_USER:$WISHADAY_GROUP" ".env"
     chmod 640 ".env"
+
+    success "Environment configured"
 }
 
-create_env() {
+create_env_file() {
     cat > "$APP_DIR/.env" << EOF
+# Database
 DATABASE_URL=sqlite:///$APP_DIR/app/wishaday.db
+
+# Upload settings
 UPLOAD_DIR=$APP_DIR/app/uploads
 MAX_FILE_SIZE=2097152
 MAX_IMAGES_PER_WISH=5
 MAX_WISHES_PER_IP_PER_DAY=10
+
+# Cleanup
 CLEANUP_INTERVAL_MINUTES=30
 SOFT_DELETE_GRACE_PERIOD_MINUTES=10
+
+# Server
 BASE_URL=https://$WISHADAY_DOMAIN
 DEBUG=false
 PORT=$WISHADAY_PORT
 SECRET_KEY=$(openssl rand -hex 32)
 EOF
+    log "Created default .env file"
 }
 
-# Database
-setup_db() {
+setup_database() {
+    step "Initializing database"
+
     mkdir -p "$APP_DIR/app"
-    [[ -f "$APP_DIR/app/wishaday.db" ]] && rm -f "$APP_DIR/app/wishaday.db"
-    
+
     sudo -u "$WISHADAY_USER" bash -c "
         cd '$APP_DIR'
         source venv/bin/activate
         export PYTHONPATH='$APP_DIR'
-        python -c 'from app.database import init_db; init_db(); print(\"DB initialized\")' || \
+        python -c 'from app.database import init_db; init_db()' 2>/dev/null || \
         python -c 'import sqlite3; conn = sqlite3.connect(\"$APP_DIR/app/wishaday.db\"); conn.close()'
-    "
-    
-    chown "$WISHADAY_USER:$WISHADAY_GROUP" "$APP_DIR/app/wishaday.db" 2>/dev/null || true
-    chmod 664 "$APP_DIR/app/wishaday.db" 2>/dev/null || true
+    " > /dev/null 2>&1 &
+    spinner $! "Creating database"
+
+    if [[ -f "$APP_DIR/app/wishaday.db" ]]; then
+        chown "$WISHADAY_USER:$WISHADAY_GROUP" "$APP_DIR/app/wishaday.db"
+        chmod 664 "$APP_DIR/app/wishaday.db"
+    fi
+
+    success "Database ready"
 }
 
-# Services
-setup_systemd() {
+# ==================== Service Configuration ====================
+
+setup_systemd_service() {
+    step "Configuring systemd service"
+
     cat > "/etc/systemd/system/$SERVICE_NAME.service" << EOF
 [Unit]
 Description=Wishaday - Wish Sharing Platform
@@ -174,346 +363,654 @@ Environment=PYTHONPATH=$APP_DIR
 EnvironmentFile=$APP_DIR/.env
 ExecStart=$APP_DIR/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port $WISHADAY_PORT
 Restart=always
-RestartSec=5
+RestartSec=3
 StandardOutput=append:$APP_DIR/logs/wishaday.log
 StandardError=append:$APP_DIR/logs/wishaday.error.log
 
 [Install]
 WantedBy=multi-user.target
 EOF
-    
+
     systemctl daemon-reload
-    systemctl enable "$SERVICE_NAME"
+    systemctl enable "$SERVICE_NAME" > /dev/null 2>&1
+
+    success "Service configured"
 }
 
-setup_nginx() {
-    cat > "$NGINX_AVAILABLE/$APP_NAME" << EOF
+setup_nginx_config() {
+    step "Configuring nginx"
+
+    cat > "/etc/nginx/sites-available/$APP_NAME" << 'EOF'
 server {
     listen 80;
-    server_name $WISHADAY_DOMAIN;
+    server_name DOMAIN_PLACEHOLDER;
     client_max_body_size 10M;
 
-    # API
+    # API proxy
     location /api/ {
-        proxy_pass http://127.0.0.1:$WISHADAY_PORT/api/;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_pass http://127.0.0.1:PORT_PLACEHOLDER/api/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_buffering off;
     }
 
-    # Health
+    # Health check
     location /health {
-        proxy_pass http://127.0.0.1:$WISHADAY_PORT/health;
+        proxy_pass http://127.0.0.1:PORT_PLACEHOLDER/health;
         access_log off;
     }
 
-    # Media
+    # Media files
     location /media/ {
-        alias $APP_DIR/app/uploads/;
+        alias APP_DIR_PLACEHOLDER/app/uploads/;
         expires 30d;
-        try_files \$uri =404;
+        add_header Cache-Control "public, immutable";
+        try_files $uri =404;
     }
 
     # Frontend
     location / {
-        root $APP_DIR/frontend/dist;
-        try_files \$uri \$uri/ /index.html;
-        expires 1d;
+        root APP_DIR_PLACEHOLDER/frontend/dist;
+        try_files $uri $uri/ /index.html;
+        expires 1h;
+        add_header Cache-Control "public, must-revalidate";
     }
 }
 EOF
-    
-    ln -sf "$NGINX_AVAILABLE/$APP_NAME" "$NGINX_ENABLED/$APP_NAME"
-    rm -f "$NGINX_ENABLED/default"
-    nginx -t && success "Nginx configured"
+
+    # Replace placeholders
+    sed -i \
+        -e "s|DOMAIN_PLACEHOLDER|$WISHADAY_DOMAIN|g" \
+        -e "s|PORT_PLACEHOLDER|$WISHADAY_PORT|g" \
+        -e "s|APP_DIR_PLACEHOLDER|$APP_DIR|g" \
+        "/etc/nginx/sites-available/$APP_NAME"
+
+    ln -sf "/etc/nginx/sites-available/$APP_NAME" "/etc/nginx/sites-enabled/$APP_NAME"
+    rm -f "/etc/nginx/sites-enabled/default"
+
+    nginx -t > /dev/null 2>&1 &
+    spinner $! "Testing nginx configuration"
+
+    success "Nginx configured"
 }
 
 setup_ssl() {
-    certbot --nginx -d "$WISHADAY_DOMAIN" --non-interactive --agree-tos \
-        --email "admin@$WISHADAY_DOMAIN" 2>/dev/null || \
+    step "Setting up SSL certificate"
+
+    if certbot certificates 2>/dev/null | grep -q "$WISHADAY_DOMAIN"; then
+        log "SSL certificate already exists"
+        return 0
+    fi
+
+    certbot --nginx -d "$WISHADAY_DOMAIN" \
+        --non-interactive --agree-tos \
+        --email "admin@$WISHADAY_DOMAIN" \
+        --redirect > /dev/null 2>&1 &
+
+    if spinner $! "Obtaining SSL certificate"; then
+        success "SSL certificate installed"
+    else
         warn "SSL setup failed. Run manually: certbot --nginx -d $WISHADAY_DOMAIN"
+    fi
 }
 
-# Permissions
-fix_perms() {
+# ==================== Permissions ====================
+
+fix_permissions() {
+    step "Fixing permissions"
+
     chown -R "$WISHADAY_USER:$WISHADAY_GROUP" "$APP_DIR"
-    find "$APP_DIR" -type d -exec chmod 755 {} \;
-    find "$APP_DIR" -type f -exec chmod 644 {} \;
+
+    find "$APP_DIR" -type d -exec chmod 755 {} \; 2>/dev/null
+    find "$APP_DIR" -type f -exec chmod 644 {} \; 2>/dev/null
+
     chmod -R 775 "$APP_DIR/app/uploads" 2>/dev/null || true
     chmod 664 "$APP_DIR/app/wishaday.db" 2>/dev/null || true
     chmod 640 "$APP_DIR/.env" 2>/dev/null || true
+
+    success "Permissions fixed"
 }
 
-# Main operations
-setup_system() {
-    header "Complete System Setup"
-    check_os
-    setup_user
-    install_deps
-    install_node
-    setup_dirs
-    success "System ready! Run: sudo $0 install"
-}
+# ==================== Service Management ====================
 
-install_app() {
-    header "Installing Application"
-    setup_repo
-    setup_python
-    setup_env
-    setup_db
-    build_frontend
-    fix_perms
-    success "App installed! Run: sudo $0 configure"
-}
+start_services() {
+    step "Starting services"
 
-configure_all() {
-    header "Configuring Services"
-    setup_systemd
-    setup_nginx
-    systemctl enable --now nginx
-    success "Services configured! Run: sudo $0 deploy"
-}
-
-deploy() {
-    header "Deploying to Production"
-    systemctl stop "$SERVICE_NAME" 2>/dev/null || true
-    setup_repo
-    setup_python
-    build_frontend
-    fix_perms
-    systemctl daemon-reload
-    nginx -t && systemctl reload nginx
+    systemctl start nginx 2>/dev/null || true
     systemctl start "$SERVICE_NAME"
-    setup_ssl
-    wait_for "Starting" 3
-    test_connectivity
-    success "Deployed!"
+
+    sleep 2
+
+    if systemctl is-active --quiet "$SERVICE_NAME"; then
+        success "Services started"
+    else
+        error "Failed to start services"
+    fi
 }
 
-# Service management
-service_ctl() {
-    local action=$1
-    case $action in
-        start) systemctl start "$SERVICE_NAME" nginx ;;
-        stop) systemctl stop "$SERVICE_NAME" ;;
-        restart) systemctl restart "$SERVICE_NAME" && systemctl reload nginx ;;
-    esac
-    wait_for "${action}ing" 3
-    check_status
+stop_services() {
+    step "Stopping services"
+
+    systemctl stop "$SERVICE_NAME" 2>/dev/null || true
+
+    success "Services stopped"
 }
 
-check_status() {
+restart_services() {
+    step "Restarting services"
+
+    systemctl restart "$SERVICE_NAME"
+    systemctl reload nginx
+
+    sleep 2
+
+    if systemctl is-active --quiet "$SERVICE_NAME"; then
+        success "Services restarted"
+    else
+        error "Failed to restart services"
+    fi
+}
+
+# ==================== Status & Diagnostics ====================
+
+show_status() {
     header "System Status"
-    echo -e "Services:"
-    systemctl is-active --quiet "$SERVICE_NAME" && echo -e "  ${GREEN}✓${NC} Wishaday" || echo -e "  ${RED}✗${NC} Wishaday"
-    systemctl is-active --quiet nginx && echo -e "  ${GREEN}✓${NC} Nginx" || echo -e "  ${RED}✗${NC} Nginx"
-    
-    echo -e "\nPorts:"
-    netstat -tlnp | grep -q ":$WISHADAY_PORT " && echo -e "  ${GREEN}✓${NC} Port $WISHADAY_PORT" || echo -e "  ${RED}✗${NC} Port $WISHADAY_PORT"
-    netstat -tlnp | grep -q ":80 " && echo -e "  ${GREEN}✓${NC} Port 80" || echo -e "  ${RED}✗${NC} Port 80"
-    
-    echo -e "\nFiles:"
-    [[ -f "$APP_DIR/app/wishaday.db" ]] && echo -e "  ${GREEN}✓${NC} Database" || echo -e "  ${RED}✗${NC} Database"
-    [[ -f "$APP_DIR/.env" ]] && echo -e "  ${GREEN}✓${NC} Env config" || echo -e "  ${RED}✗${NC} Env config"
-}
 
-# Diagnostics
-diagnose() {
-    header "Diagnosing Issues"
-    local issues=0
-    
-    # Service
-    systemctl is-active --quiet "$SERVICE_NAME" || { warn "Service stopped"; issues=$((issues+1)); systemctl start "$SERVICE_NAME"; }
-    
-    # Database
-    [[ ! -f "$APP_DIR/app/wishaday.db" ]] && { warn "DB missing"; issues=$((issues+1)); setup_db; }
-    
-    # Permissions
-    [[ $(stat -c %U "$APP_DIR/.env" 2>/dev/null) != "$WISHADAY_USER" ]] && { warn "Bad perms"; issues=$((issues+1)); fix_perms; }
-    
-    # Nginx
-    nginx -t 2>/dev/null || { warn "Nginx config"; issues=$((issues+1)); setup_nginx; }
-    
-    # Test
-    test_connectivity
-    [[ $issues -eq 0 ]] && success "System healthy" || success "Fixed $issues issues"
+    # Services
+    echo -e "${BOLD}Services:${NC}"
+    if systemctl is-active --quiet "$SERVICE_NAME"; then
+        echo -e "  ${GREEN}✓${NC} Wishaday (running)"
+    else
+        echo -e "  ${RED}✗${NC} Wishaday (stopped)"
+    fi
+
+    if systemctl is-active --quiet nginx; then
+        echo -e "  ${GREEN}✓${NC} Nginx (running)"
+    else
+        echo -e "  ${RED}✗${NC} Nginx (stopped)"
+    fi
+
+    # Ports
+    echo -e "\n${BOLD}Ports:${NC}"
+    if netstat -tlnp 2>/dev/null | grep -q ":$WISHADAY_PORT "; then
+        echo -e "  ${GREEN}✓${NC} Port $WISHADAY_PORT (backend)"
+    else
+        echo -e "  ${RED}✗${NC} Port $WISHADAY_PORT (backend)"
+    fi
+
+    if netstat -tlnp 2>/dev/null | grep -q ":80 "; then
+        echo -e "  ${GREEN}✓${NC} Port 80 (http)"
+    else
+        echo -e "  ${RED}✗${NC} Port 80 (http)"
+    fi
+
+    if netstat -tlnp 2>/dev/null | grep -q ":443 "; then
+        echo -e "  ${GREEN}✓${NC} Port 443 (https)"
+    else
+        echo -e "  ${YELLOW}○${NC} Port 443 (https) - SSL not configured"
+    fi
+
+    # Files
+    echo -e "\n${BOLD}Files:${NC}"
+    [[ -f "$APP_DIR/app/wishaday.db" ]] && \
+        echo -e "  ${GREEN}✓${NC} Database exists" || \
+        echo -e "  ${RED}✗${NC} Database missing"
+
+    [[ -f "$APP_DIR/.env" ]] && \
+        echo -e "  ${GREEN}✓${NC} Environment configured" || \
+        echo -e "  ${RED}✗${NC} Environment missing"
+
+    [[ -d "$APP_DIR/venv" ]] && \
+        echo -e "  ${GREEN}✓${NC} Python venv exists" || \
+        echo -e "  ${RED}✗${NC} Python venv missing"
+
+    # Git status
+    if [[ -d "$APP_DIR/.git" ]]; then
+        echo -e "\n${BOLD}Repository:${NC}"
+        cd "$APP_DIR"
+        local current_branch=$(sudo -u "$WISHADAY_USER" git branch --show-current 2>/dev/null || echo "unknown")
+        local commit_hash=$(sudo -u "$WISHADAY_USER" git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+        echo -e "  Branch: ${CYAN}$current_branch${NC}"
+        echo -e "  Commit: ${CYAN}$commit_hash${NC}"
+    fi
+
+    # Connectivity test
+    echo -e "\n${BOLD}Connectivity:${NC}"
+    if curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:$WISHADAY_PORT/health" 2>/dev/null | grep -q "200"; then
+        echo -e "  ${GREEN}✓${NC} Backend responding"
+    else
+        echo -e "  ${RED}✗${NC} Backend not responding"
+    fi
+
+    if curl -s -o /dev/null -w "%{http_code}" "http://localhost/health" 2>/dev/null | grep -q "200"; then
+        echo -e "  ${GREEN}✓${NC} Nginx proxy working"
+    else
+        echo -e "  ${YELLOW}○${NC} Nginx proxy issue"
+    fi
+
+    echo ""
 }
 
 test_connectivity() {
     step "Testing connectivity"
-    curl -s -o /dev/null -w "Backend: %{http_code}\n" "http://127.0.0.1:$WISHADAY_PORT/health" | \
-        while read line; do
-            [[ $line =~ 200 ]] && echo -e "  ${GREEN}✓${NC} $line" || echo -e "  ${RED}✗${NC} $line"
-        done
-    
-    curl -s -o /dev/null -w "Nginx: %{http_code}\n" "http://localhost/health" | \
-        while read line; do
-            [[ $line =~ 200 ]] && echo -e "  ${GREEN}✓${NC} $line" || echo -e "  ${RED}✗${NC} $line"
-        done
+
+    local backend_status=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:$WISHADAY_PORT/health" 2>/dev/null)
+    local nginx_status=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost/health" 2>/dev/null)
+
+    if [[ "$backend_status" == "200" ]]; then
+        echo -e "  ${GREEN}✓${NC} Backend: $backend_status"
+    else
+        echo -e "  ${RED}✗${NC} Backend: $backend_status"
+    fi
+
+    if [[ "$nginx_status" == "200" ]]; then
+        echo -e "  ${GREEN}✓${NC} Nginx: $nginx_status"
+    else
+        echo -e "  ${RED}✗${NC} Nginx: $nginx_status"
+    fi
 }
 
-# Maintenance
 show_logs() {
     header "Recent Logs"
-    echo -e "${YELLOW}Service:${NC}"
-    journalctl -u "$SERVICE_NAME" -n 10 --no-pager 2>/dev/null || echo "No logs"
-    echo -e "\n${YELLOW}Errors:${NC}"
-    tail -10 "$APP_DIR/logs/wishaday.error.log" 2>/dev/null || echo "No error logs"
+
+    echo -e "${BOLD}Service Logs:${NC}"
+    journalctl -u "$SERVICE_NAME" -n 20 --no-pager 2>/dev/null || echo "No service logs"
+
+    echo -e "\n${BOLD}Error Logs:${NC}"
+    tail -20 "$APP_DIR/logs/wishaday.error.log" 2>/dev/null || echo "No error logs"
 }
 
-update_app() {
-    header "Updating Application"
-    systemctl stop "$SERVICE_NAME"
-    cd "$APP_DIR"
-    sudo -u "$WISHADAY_USER" git pull
-    sudo -u "$WISHADAY_USER" bash -c "source venv/bin/activate && pip install --upgrade -e ."
+diagnose() {
+    header "Diagnosing System"
+
+    local issues=0
+
+    # Check service
+    if ! systemctl is-active --quiet "$SERVICE_NAME"; then
+        warn "Service is not running"
+        issues=$((issues + 1))
+        systemctl start "$SERVICE_NAME"
+    fi
+
+    # Check database
+    if [[ ! -f "$APP_DIR/app/wishaday.db" ]]; then
+        warn "Database missing"
+        issues=$((issues + 1))
+        setup_database
+    fi
+
+    # Check permissions
+    if [[ $(stat -c %U "$APP_DIR/.env" 2>/dev/null) != "$WISHADAY_USER" ]]; then
+        warn "Permission issues detected"
+        issues=$((issues + 1))
+        fix_permissions
+    fi
+
+    # Check nginx
+    if ! nginx -t > /dev/null 2>&1; then
+        warn "Nginx configuration error"
+        issues=$((issues + 1))
+        setup_nginx_config
+        systemctl reload nginx
+    fi
+
+    # Test connectivity
+    sleep 2
+    test_connectivity
+
+    if [[ $issues -eq 0 ]]; then
+        success "System is healthy"
+    else
+        success "Fixed $issues issues"
+    fi
+}
+
+# ==================== High-Level Operations ====================
+
+quick_start() {
+    header "Quick Start Installation"
+
+    check_os
+    setup_user
+    install_dependencies
+    install_nodejs
+    setup_directories
+    clone_repository
+    setup_python_env
+    setup_environment
+    setup_database
     build_frontend
-    fix_perms
-    systemctl start "$SERVICE_NAME"
-    success "Updated!"
+    fix_permissions
+    setup_systemd_service
+    setup_nginx_config
+    systemctl enable --now nginx > /dev/null 2>&1
+    start_services
+    setup_ssl
+
+    sleep 3
+    show_status
+
+    header "Installation Complete!"
+    echo -e "🎉 Wishaday is now running at: ${GREEN}https://$WISHADAY_DOMAIN${NC}"
+    echo ""
+    echo "Next steps:"
+    echo "  • Visit your site to verify it's working"
+    echo "  • Check status: sudo $0 status"
+    echo "  • View logs: sudo $0 logs"
+    echo "  • Update code: sudo $0 pull"
+    echo ""
 }
 
-clear_cache() {
-    header "Clearing Cache"
-    find "$APP_DIR" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-    find "$APP_DIR" -name "*.pyc" -delete 2>/dev/null || true
-    rm -rf "$APP_DIR/frontend/node_modules" 2>/dev/null || true
-    rm -rf "$APP_DIR/frontend/.next" "$APP_DIR/frontend/.nuxt" 2>/dev/null || true
-    success "Cache cleared"
+pull_and_update() {
+    header "Pull & Update"
+
+    # Create backup first
+    create_backup_quick
+
+    # Pull changes
+    if pull_latest; then
+        # Changes detected, update what's needed
+        log "Applying updates..."
+
+        setup_python_env
+
+        if [[ -d "$APP_DIR/frontend" ]]; then
+            build_frontend
+        fi
+
+        fix_permissions
+        restart_services
+
+        sleep 2
+        test_connectivity
+
+        success "Update complete!"
+    else
+        log "No changes to apply"
+    fi
+}
+
+quick_update() {
+    header "Quick Update"
+
+    stop_services
+    setup_python_env
+
+    if [[ -d "$APP_DIR/frontend" ]]; then
+        build_frontend
+    fi
+
+    fix_permissions
+    start_services
+
+    sleep 2
+    test_connectivity
+
+    success "Update complete!"
+}
+
+create_backup_quick() {
+    local timestamp=$(date +%Y%m%d_%H%M%S)
+    local backup_path="$BACKUP_DIR/backup-$timestamp"
+
+    mkdir -p "$backup_path"
+
+    # Backup database
+    if [[ -f "$APP_DIR/app/wishaday.db" ]]; then
+        cp "$APP_DIR/app/wishaday.db" "$backup_path/" > /dev/null 2>&1
+    fi
+
+    # Backup .env
+    if [[ -f "$APP_DIR/.env" ]]; then
+        cp "$APP_DIR/.env" "$backup_path/" > /dev/null 2>&1
+    fi
+
+    chown -R "$WISHADAY_USER:$WISHADAY_GROUP" "$backup_path"
+
+    log "Backup created: $backup_path"
+}
+
+full_backup() {
+    header "Creating Full Backup"
+
+    local timestamp=$(date +%Y%m%d_%H%M%S)
+    local backup_path="$BACKUP_DIR/full-backup-$timestamp"
+
+    mkdir -p "$backup_path"
+
+    tar -czf "$backup_path/app.tar.gz" \
+        -C "$APP_DIR" \
+        --exclude="venv" \
+        --exclude="node_modules" \
+        --exclude="frontend/dist" \
+        --exclude="__pycache__" \
+        --exclude="*.pyc" \
+        . > /dev/null 2>&1 &
+    spinner $! "Creating backup archive"
+
+    [[ -f "$APP_DIR/app/wishaday.db" ]] && \
+        cp "$APP_DIR/app/wishaday.db" "$backup_path/"
+
+    chown -R "$WISHADAY_USER:$WISHADAY_GROUP" "$backup_path"
+
+    success "Backup created: $backup_path"
+
+    # Keep only last 10 backups
+    ls -t "$BACKUP_DIR" | tail -n +11 | xargs -I {} rm -rf "$BACKUP_DIR/{}" 2>/dev/null || true
 }
 
 clean_build() {
-    header "Cleaning Build"
-    systemctl stop "$SERVICE_NAME"
-    rm -rf "$APP_DIR/venv" "$APP_DIR/frontend/node_modules" "$APP_DIR/frontend/dist" 2>/dev/null || true
+    header "Cleaning Build Artifacts"
+
+    stop_services
+
+    rm -rf "$APP_DIR/venv" "$APP_DIR/frontend/node_modules" "$APP_DIR/frontend/dist" 2>/dev/null
     find "$APP_DIR" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-    success "Cleaned"
+    find "$APP_DIR" -name "*.pyc" -delete 2>/dev/null || true
+
+    success "Build artifacts cleaned"
 }
 
-rebuild() {
-    header "Complete Rebuild"
-    read -p "Are you sure? (y/N): " -n 1 -r
-    echo
-    [[ ! $REPLY =~ ^[Yy]$ ]] && return
-    clean_build
-    setup_python
-    setup_env
-    setup_db
-    build_frontend
-    fix_perms
-    systemctl start "$SERVICE_NAME"
-    success "Rebuilt!"
-}
-
-backup() {
-    header "Creating Backup"
-    local backup_path="$BACKUP_DIR/wishaday-$(date +%Y%m%d_%H%M%S)"
-    mkdir -p "$backup_path"
-    tar -czf "$backup_path/app.tar.gz" -C "$APP_DIR" --exclude="venv" --exclude="node_modules" .
-    [[ -f "$APP_DIR/app/wishaday.db" ]] && cp "$APP_DIR/app/wishaday.db" "$backup_path/"
-    chown -R "$WISHADAY_USER:$WISHADAY_GROUP" "$backup_path"
-    success "Backup: $backup_path"
-}
-
-monitor() {
+monitor_realtime() {
     header "Real-time Monitor (Ctrl+C to exit)"
+
     while true; do
         clear
-        echo -e "${CYAN}Wishaday Monitor - $(date)${NC}"
-        echo "=============================="
-        systemctl is-active --quiet "$SERVICE_NAME" && echo -e "Service: ${GREEN}RUNNING${NC}" || echo -e "Service: ${RED}STOPPED${NC}"
+        echo -e "${CYAN}${BOLD}Wishaday Monitor - $(date '+%Y-%m-%d %H:%M:%S')${NC}"
+        echo "═══════════════════════════════════════════════════"
+        echo ""
+
+        # Service status
+        if systemctl is-active --quiet "$SERVICE_NAME"; then
+            echo -e "Service: ${GREEN}RUNNING${NC}"
+        else
+            echo -e "Service: ${RED}STOPPED${NC}"
+        fi
+
+        # System resources
         echo -e "CPU: $(top -bn1 | grep "Cpu(s)" | awk '{print $2}')%"
-        echo -e "Mem: $(free | grep Mem | awk '{printf "%.1f", $3/$2 * 100}')%"
+        echo -e "Memory: $(free | grep Mem | awk '{printf "%.1f%%", $3/$2 * 100}')"
+        echo -e "Disk: $(df -h $APP_DIR | tail -1 | awk '{print $5}')"
+
+        # Last 5 log lines
+        echo ""
+        echo -e "${BOLD}Recent Activity:${NC}"
+        journalctl -u "$SERVICE_NAME" -n 5 --no-pager 2>/dev/null | tail -5
+
         sleep 5
     done
 }
 
-# Fix specific issues
-fix_upload() {
-    header "Fixing Image Upload"
-    # Ensure upload directory exists
-    mkdir -p "$APP_DIR/app/uploads/wishes"
-    chown -R "$WISHADAY_USER:$WISHADAY_GROUP" "$APP_DIR/app/uploads"
-    chmod 775 "$APP_DIR/app/uploads"
-    
-    # Install image dependencies
-    sudo -u "$WISHADAY_USER" bash -c "
-        cd '$APP_DIR'
-        source venv/bin/activate
-        pip install pillow
-    "
-    
-    systemctl restart "$SERVICE_NAME"
-    success "Upload fixed!"
-}
+# ==================== Help ====================
 
-# Help
 show_help() {
     cat << EOF
-${BOLD}Wishaday Server Management v3.0${NC}
+${CYAN}${BOLD}Wishaday Easy Deployment Script v4.0${NC}
 
-${BOLD}Setup:${NC}
-  setup       Complete system setup
-  install     Install application
-  configure   Configure services
-  deploy      Deploy to production
+${BOLD}Quick Commands:${NC}
+  ${GREEN}quick-start${NC}    Complete installation in one command
+  ${GREEN}pull${NC}           Pull latest code and auto-update
+  ${GREEN}status${NC}         Show system health and status
+  ${GREEN}restart${NC}        Restart all services
 
-${BOLD}Management:${NC}
-  start       Start services
-  stop        Stop services
-  restart     Restart services
-  status      Show status
+${BOLD}Setup & Installation:${NC}
+  quick-start     Complete first-time setup
+  setup-system    Install system dependencies only
+  setup-app       Install application only
+  deploy          Full deployment workflow
+
+${BOLD}Updates:${NC}
+  pull            Pull from git and update (smart update)
+  update          Update without pulling code
+
+${BOLD}Service Management:${NC}
+  start           Start services
+  stop            Stop services
+  restart         Restart services
+  status          Show system status
 
 ${BOLD}Maintenance:${NC}
-  diagnose    Auto-diagnose & fix
-  logs        Show logs
-  update      Update from git
-  clearcache  Clear cache
-  rebuild     Complete rebuild
-  backup      Create backup
-  monitor     Real-time monitor
+  diagnose        Auto-diagnose and fix issues
+  logs            Show recent logs
+  backup          Create full backup
+  monitor         Real-time monitoring
+  clean           Clean build artifacts
+  fix-perms       Fix file permissions
 
-${BOLD}Fixes:${NC}
-  fix-upload  Fix image upload 500 errors
-  fix-perms   Fix permissions
+${BOLD}Environment Variables:${NC}
+  WISHADAY_DOMAIN      Domain name (default: wishaday.hareeshworks.in)
+  WISHADAY_PORT        Backend port (default: 8000)
+  GIT_REPO            Git repository URL
+  GIT_BRANCH          Git branch (default: main)
+  NODE_VERSION        Node.js version (default: 20)
 
 ${BOLD}Examples:${NC}
-  sudo $0 setup
-  sudo $0 deploy
-  sudo $0 diagnose
+  # First time installation
+  sudo ./wishaday-deploy.sh quick-start
+
+  # Update from git
+  sudo ./wishaday-deploy.sh pull
+
+  # Just restart
+  sudo ./wishaday-deploy.sh restart
+
+  # Check health
+  sudo ./wishaday-deploy.sh status
+
+  # Custom domain
+  WISHADAY_DOMAIN=mysite.com sudo ./wishaday-deploy.sh quick-start
+
+${BOLD}Quick Workflow:${NC}
+  1. First time: sudo ./wishaday-deploy.sh quick-start
+  2. To update: sudo ./wishaday-deploy.sh pull
+  3. Check status: sudo ./wishaday-deploy.sh status
+  4. View logs: sudo ./wishaday-deploy.sh logs
+
 EOF
 }
 
-# Main
+# ==================== Main ====================
+
 main() {
     check_root
-    
+
     case "${1:-help}" in
-        setup) setup_system ;;
-        install) install_app ;;
-        configure) configure_all ;;
-        deploy) deploy ;;
-        start|stop|restart) service_ctl "$1" ;;
-        status) check_status ;;
-        diagnose) diagnose ;;
-        logs) show_logs ;;
-        update) update_app ;;
-        clearcache) clear_cache ;;
-        rebuild) rebuild ;;
-        backup) backup ;;
-        monitor) monitor ;;
-        fix-upload) fix_upload ;;
-        fix-perms) fix_perms ;;
-        *) show_help ;;
+        quick-start|quickstart)
+            quick_start
+            ;;
+        setup-system)
+            header "System Setup"
+            check_os
+            setup_user
+            install_dependencies
+            install_nodejs
+            setup_directories
+            success "System setup complete. Run: sudo $0 setup-app"
+            ;;
+        setup-app)
+            header "Application Setup"
+            clone_repository
+            setup_python_env
+            setup_environment
+            setup_database
+            build_frontend
+            fix_permissions
+            success "App setup complete. Run: sudo $0 deploy"
+            ;;
+        deploy)
+            header "Full Deployment"
+            clone_repository
+            setup_python_env
+            setup_environment
+            setup_database
+            build_frontend
+            fix_permissions
+            setup_systemd_service
+            setup_nginx_config
+            restart_services
+            setup_ssl
+            sleep 2
+            show_status
+            success "Deployment complete!"
+            ;;
+        pull)
+            pull_and_update
+            ;;
+        update)
+            quick_update
+            ;;
+        start)
+            start_services
+            test_connectivity
+            ;;
+        stop)
+            stop_services
+            ;;
+        restart)
+            restart_services
+            test_connectivity
+            ;;
+        status)
+            show_status
+            ;;
+        diagnose)
+            diagnose
+            ;;
+        logs)
+            show_logs
+            ;;
+        backup)
+            full_backup
+            ;;
+        monitor)
+            monitor_realtime
+            ;;
+        clean)
+            clean_build
+            ;;
+        fix-perms)
+            fix_permissions
+            ;;
+        test)
+            test_connectivity
+            ;;
+        help|--help|-h)
+            show_help
+            ;;
+        *)
+            error "Unknown command: $1. Use 'help' to see available commands."
+            ;;
     esac
 }
 
-# Run
+# ==================== Execute ====================
+
 echo -e "${CYAN}${BOLD}"
-echo "=================================================="
-echo "  Wishaday Server Management v3.0"
-echo "=================================================="
+echo "╔════════════════════════════════════════════════╗"
+echo "║   Wishaday Easy Deployment Script v4.0        ║"
+echo "╚════════════════════════════════════════════════╝"
 echo -e "${NC}"
 
 main "$@"

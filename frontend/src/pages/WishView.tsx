@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { CelebrationItem } from "@/components/CelebrationItems";
 import { WishCard } from "@/components/WishCard";
 import { WishTheme } from "@/components/ThemeSelector";
+import { GiftBoxOpener } from "@/components/animations";
 import { getWish, Wish } from "@/services/api";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +32,8 @@ const WishView = () => {
   const { slug } = useParams<{ slug: string }>();
   const [state, setState] = useState<WishState>({ status: "loading" });
   const [pageLoaded, setPageLoaded] = useState(false);
+  const [showGiftBox, setShowGiftBox] = useState(false);
+  const [giftBoxComplete, setGiftBoxComplete] = useState(false);
 
   useEffect(() => {
     if (!slug) {
@@ -48,8 +51,11 @@ const WishView = () => {
           setState({ status: "expired" });
         } else if (result.data) {
           setState({ status: "success", wish: result.data });
-          // Trigger page loaded animation after wish is loaded
-          setTimeout(() => setPageLoaded(true), 100);
+          
+          // Start gift box animation after wish is loaded
+          setTimeout(() => {
+            setShowGiftBox(true);
+          }, 500);
         } else {
           setState({ status: "error" });
         }
@@ -60,6 +66,12 @@ const WishView = () => {
 
     fetchWish();
   }, [slug]);
+
+  // Handle gift box opening completion
+  const handleGiftBoxComplete = () => {
+    setGiftBoxComplete(true);
+    setTimeout(() => setPageLoaded(true), 200);
+  };
 
   // Enhanced loading state with theme preview
   if (state.status === "loading") {
@@ -169,11 +181,20 @@ const WishView = () => {
     );
   }
 
-  // Success state with enhanced animations
+  // Success state with enhanced animations and gift box opener
   const { wish } = state;
 
   return (
     <div className={`min-h-screen theme-${wish.theme} relative overflow-hidden`}>
+      {/* Gift Box Opener - shows first */}
+      {showGiftBox && !giftBoxComplete && (
+        <GiftBoxOpener
+          theme={wish.theme as WishTheme}
+          onOpenComplete={handleGiftBoxComplete}
+          isActive={showGiftBox}
+        />
+      )}
+
       {/* Enhanced theme background with animation */}
       <div className="absolute inset-0 theme-gradient opacity-8 animate-background-pulse" />
       
@@ -204,23 +225,27 @@ const WishView = () => {
         <div className="flex-1 flex items-center justify-center py-12 px-4">
           <div className={cn(
             "w-full max-w-2xl transition-all duration-1000",
-            pageLoaded ? "animate-wish-entrance" : "opacity-0 scale-90 translate-y-8"
+            pageLoaded && giftBoxComplete ? "animate-wish-entrance" : "opacity-0 scale-90 translate-y-8"
           )}>
-            <WishCard
-              title={wish.title}
-              message={wish.message}
-              theme={wish.theme as WishTheme}
-              images={wish.images}
-              celebrationItems={transformCelebrationItems(wish.celebration_items)}
-              remainingViews={wish.remaining_views}
-            />
+            {giftBoxComplete && (
+              <WishCard
+                title={wish.title}
+                message={wish.message}
+                theme={wish.theme as WishTheme}
+                images={wish.images}
+                celebrationItems={transformCelebrationItems(wish.celebration_items)}
+                remainingViews={wish.remaining_views}
+                senderName={wish.sender_name}
+                senderMessage={wish.sender_message}
+              />
+            )}
           </div>
         </div>
 
         {/* Enhanced footer with animation */}
         <footer className={cn(
           "py-6 text-center transition-all duration-700 delay-1000",
-          pageLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+          pageLoaded && giftBoxComplete ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
         )}>
           <Link
             to="/create"

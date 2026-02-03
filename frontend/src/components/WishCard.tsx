@@ -16,6 +16,8 @@ interface WishCardProps {
   images?: string[];
   celebrationItems?: CelebrationItem[];
   remainingViews?: number;
+  senderName?: string;
+  senderMessage?: string;
   className?: string;
   isPreview?: boolean;
 }
@@ -49,6 +51,8 @@ export function WishCard({
   images = [],
   celebrationItems = [],
   remainingViews,
+  senderName,
+  senderMessage,
   className,
   isPreview = false,
 }: WishCardProps) {
@@ -227,6 +231,33 @@ export function WishCard({
                   </div>
                 );
               })}
+            </div>
+          </div>
+        )}
+
+        {/* Sender Information */}
+        {(senderName || senderMessage) && (
+          <div className={cn(
+            "mb-6 p-4 rounded-xl bg-background/50 backdrop-blur-sm border border-border/50",
+            "transform transition-all duration-700 delay-700",
+            showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+          )}>
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Heart className="w-4 h-4 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                {senderName && (
+                  <p className="text-sm font-medium text-foreground mb-1">
+                    From {senderName}
+                  </p>
+                )}
+                {senderMessage && (
+                  <p className="text-sm text-muted-foreground italic">
+                    "{senderMessage}"
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         )}

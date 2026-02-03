@@ -128,6 +128,8 @@ async def create_wish(
         celebration_items=celebration_items_list,
         expires_at=wish_data.expires_at,
         max_views=wish_data.max_views,
+        sender_name=wish_data.sender_name,
+        sender_message=wish_data.sender_message,
         ip_hash=ip_hash
     )
     
@@ -207,7 +209,9 @@ async def view_wish(slug: str, db: Session = Depends(get_db)):
         theme=wish.theme,
         celebration_items=celebration_items,
         images=image_urls,
-        remaining_views=max(0, remaining_views) if remaining_views is not None else None
+        remaining_views=max(0, remaining_views) if remaining_views is not None else None,
+        sender_name=wish.sender_name,
+        sender_message=wish.sender_message
     )
 
 

@@ -53,7 +53,7 @@ const DefaultAnimation = ({ elements }: { elements: FloatingElement[] }) => (
   </div>
 );
 
-// Birthday Theme - Enhanced bouncing balloons, confetti, cake candles
+// Birthday Theme - Enhanced bouncing balloons, confetti, cake candles, party poppers
 const BirthdayAnimation = ({ elements }: { elements: FloatingElement[] }) => {
   const balloonColors = ["#FF6B6B", "#4ECDC4", "#FFE66D", "#95E1D3", "#F38181", "#AA96DA"];
   
@@ -98,6 +98,69 @@ const BirthdayAnimation = ({ elements }: { elements: FloatingElement[] }) => {
             left: `${el.x}%`,
             animationDelay: `${el.delay}s`,
             backgroundColor: balloonColors[i % balloonColors.length],
+            transform: `rotate(${el.delay * 90}deg)`,
+          }}
+        />
+      ))}
+      
+      {/* Multiple party poppers with staggered timing */}
+      <PartyPopper 
+        className="absolute top-[8%] left-[3%] text-accent animate-bounce-pop-enhanced" 
+        style={{ width: 36, height: 36, animationDelay: "0.3s" }}
+      />
+      <PartyPopper 
+        className="absolute top-[12%] right-[5%] text-primary animate-bounce-pop-enhanced scale-x-[-1]" 
+        style={{ width: 32, height: 32, animationDelay: "0.8s" }}
+      />
+      <PartyPopper 
+        className="absolute bottom-[15%] left-[8%] text-accent animate-bounce-pop-enhanced" 
+        style={{ width: 28, height: 28, animationDelay: "1.2s" }}
+      />
+      
+      {/* Birthday cake with candles */}
+      <div className="absolute bottom-[10%] right-[10%] animate-cake-appear">
+        <div className="relative">
+          <div 
+            className="w-12 h-8 bg-gradient-to-t from-pink-400 to-pink-300 rounded-lg"
+            style={{ animationDelay: "1.5s" }}
+          >
+            {/* Candles */}
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={i}
+                className="absolute w-1 h-3 bg-yellow-400 rounded-full"
+                style={{
+                  left: `${20 + i * 25}%`,
+                  top: "-8px",
+                }}
+              >
+                <div 
+                  className="absolute -top-2 left-1/2 -translate-x-1/2 w-1 h-2 bg-orange-400 rounded-full animate-flame-flicker"
+                  style={{ animationDelay: `${i * 0.2}s` }}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      
+      {/* Birthday sparkles */}
+      <div className="birthday-sparkles">
+        {Array.from({ length: 12 }).map((_, i) => (
+          <div
+            key={`sparkle-${i}`}
+            className="birthday-sparkle animate-birthday-sparkle"
+            style={{
+              left: `${10 + i * 7}%`,
+              top: `${20 + (i % 3) * 20}%`,
+              animationDelay: `${i * 0.2}s`,
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
             transform: `rotate(${el.delay * 90}deg)`,
           }}
         />

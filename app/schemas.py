@@ -23,6 +23,8 @@ class WishCreate(BaseModel):
     celebration_items: Optional[List[CelebrationItemSchema]] = Field(default_factory=list, description="List of celebration items to display")
     expires_at: Optional[datetime] = None
     max_views: Optional[int] = Field(None, ge=1, le=1000)
+    sender_name: Optional[str] = Field(None, max_length=100, description="Name of the person sending the wish")
+    sender_message: Optional[str] = Field(None, max_length=200, description="Personal message from the sender")
     
     @model_validator(mode='after')
     def validate_expiry(self):
@@ -36,6 +38,8 @@ class WishCreate(BaseModel):
             "title": "Happy Birthday",
             "message": "Have a great day!",
             "theme": "birthday",
+            "sender_name": "John Doe",
+            "sender_message": "With love from your friend",
             "expires_at": "2026-02-05T10:00:00Z",
             "max_views": 1
         }
@@ -77,12 +81,16 @@ class WishViewResponse(BaseModel):
     celebration_items: List[dict] = Field(default_factory=list)
     images: List[str]
     remaining_views: Optional[int]
+    sender_name: Optional[str] = Field(None, description="Name of the person who sent the wish")
+    sender_message: Optional[str] = Field(None, description="Personal message from the sender")
     
     model_config = ConfigDict(json_schema_extra={
         "example": {
             "title": "Happy Birthday",
             "message": "Have a great day!",
             "theme": "birthday",
+            "sender_name": "John Doe",
+            "sender_message": "With love from your friend",
             "images": ["/media/wishes/123/image1.webp", "/media/wishes/123/image2.webp"],
             "remaining_views": 0
         }

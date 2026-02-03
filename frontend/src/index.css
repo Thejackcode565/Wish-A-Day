@@ -321,6 +321,729 @@
 }
 
 /* =====================================================
+   ENHANCED CELEBRATION ITEM ANIMATIONS
+   ===================================================== */
+
+/* Chocolate animations */
+@keyframes chocolate-slide {
+  0% { 
+    transform: translateX(-100px) rotate(-10deg) scale(0.8);
+    opacity: 0;
+  }
+  50% { 
+    transform: translateX(10px) rotate(5deg) scale(1.1);
+    opacity: 1;
+  }
+  100% { 
+    transform: translateX(0px) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-chocolate-slide {
+  animation: chocolate-slide 1.2s ease-out forwards;
+}
+
+.chocolate-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+.chocolate-wrapper::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.3) 50%, transparent 70%);
+  animation: chocolate-shine 2s ease-in-out infinite;
+}
+
+@keyframes chocolate-shine {
+  0%, 100% { transform: translateX(-100%); }
+  50% { transform: translateX(100%); }
+}
+
+/* Cake animations */
+@keyframes cake-bounce {
+  0% { 
+    transform: translateY(50px) scale(0.8);
+    opacity: 0;
+  }
+  60% { 
+    transform: translateY(-10px) scale(1.1);
+    opacity: 1;
+  }
+  80% { 
+    transform: translateY(5px) scale(0.95);
+  }
+  100% { 
+    transform: translateY(0px) scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-cake-bounce {
+  animation: cake-bounce 1.5s ease-out forwards;
+}
+
+.cake-base {
+  position: relative;
+  border-radius: 8px 8px 4px 4px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+.cake-frosting {
+  position: absolute;
+  top: -4px;
+  left: 10%;
+  right: 10%;
+  height: 8px;
+  background: linear-gradient(90deg, #FFB6C1, #FFF0F5, #FFB6C1);
+  border-radius: 50px;
+  animation: frosting-drip 3s ease-in-out infinite;
+}
+
+@keyframes frosting-drip {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(1.2); }
+}
+
+.cake-candle {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 3px;
+  height: 12px;
+  background: linear-gradient(to bottom, #FFD700, #FFA500);
+  border-radius: 2px;
+}
+
+.candle-flame {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 6px;
+  background: radial-gradient(circle, #FF4500, #FFD700);
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+}
+
+@keyframes flame-flicker {
+  0%, 100% { 
+    transform: translateX(-50%) scale(1) rotate(-2deg);
+    opacity: 1;
+  }
+  25% { 
+    transform: translateX(-50%) scale(1.1) rotate(2deg);
+    opacity: 0.9;
+  }
+  50% { 
+    transform: translateX(-50%) scale(0.9) rotate(-1deg);
+    opacity: 1;
+  }
+  75% { 
+    transform: translateX(-50%) scale(1.05) rotate(1deg);
+    opacity: 0.95;
+  }
+}
+
+.animate-flame-flicker {
+  animation: flame-flicker 1.5s ease-in-out infinite;
+}
+
+/* Enhanced balloon animations */
+@keyframes balloon-rise {
+  0% { 
+    transform: translateY(100vh) rotate(0deg) scale(0.8);
+    opacity: 0;
+  }
+  10% { 
+    opacity: 1;
+  }
+  50% { 
+    transform: translateY(50vh) rotate(-5deg) scale(1.1);
+  }
+  100% { 
+    transform: translateY(-20vh) rotate(-10deg) scale(1);
+    opacity: 0.9;
+  }
+}
+
+.animate-balloon-rise {
+  animation: balloon-rise 8s ease-out infinite;
+}
+
+.balloon-container {
+  position: relative;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+}
+
+.balloon {
+  position: relative;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  background: linear-gradient(135deg, currentColor, rgba(255, 255, 255, 0.3));
+  animation: balloon-sway 3s ease-in-out infinite;
+}
+
+@keyframes balloon-sway {
+  0%, 100% { transform: rotate(-2deg); }
+  50% { transform: rotate(2deg); }
+}
+
+.balloon-shine {
+  position: absolute;
+  top: 15%;
+  left: 20%;
+  width: 30%;
+  height: 40%;
+  background: radial-gradient(ellipse, rgba(255, 255, 255, 0.6), transparent);
+  border-radius: 50%;
+}
+
+.balloon-string {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1px;
+  background: linear-gradient(to bottom, #8B4513, #A0522D);
+  animation: string-wave 2s ease-in-out infinite;
+}
+
+@keyframes string-wave {
+  0%, 100% { transform: translateX(-50%) rotate(0deg); }
+  25% { transform: translateX(-50%) rotate(2deg); }
+  75% { transform: translateX(-50%) rotate(-2deg); }
+}
+
+/* Enhanced popper animations */
+.popper-container {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.popper-container.popped {
+  transform: scale(1.2);
+}
+
+@keyframes popper-shake {
+  0%, 100% { transform: rotate(0deg); }
+  10% { transform: rotate(-5deg); }
+  20% { transform: rotate(5deg); }
+  30% { transform: rotate(-3deg); }
+  40% { transform: rotate(3deg); }
+  50% { transform: rotate(-1deg); }
+  60% { transform: rotate(1deg); }
+  70% { transform: rotate(0deg); }
+}
+
+.animate-popper-shake {
+  animation: popper-shake 0.8s ease-in-out;
+}
+
+.popper-burst {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.burst-particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  transform-origin: center;
+}
+
+@keyframes burst-fly {
+  0% { 
+    transform: scale(0) translateY(0px);
+    opacity: 1;
+  }
+  100% { 
+    transform: scale(1) translateY(-40px);
+    opacity: 0;
+  }
+}
+
+.animate-burst-fly {
+  animation: burst-fly 1.5s ease-out forwards;
+}
+
+/* Enhanced gift box animations */
+@keyframes gift-appear {
+  0% { 
+    transform: scale(0) rotate(-180deg);
+    opacity: 0;
+  }
+  50% { 
+    transform: scale(1.2) rotate(-90deg);
+    opacity: 0.8;
+  }
+  100% { 
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+.animate-gift-appear {
+  animation: gift-appear 1.2s ease-out forwards;
+}
+
+.gift-box {
+  position: relative;
+  border-radius: 6px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.gift-lid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 30%;
+  border-radius: 6px 6px 0 0;
+  transform-origin: bottom;
+  transition: transform 0.7s ease-out;
+}
+
+.gift-lid-opened {
+  transform: rotateX(-90deg) translateY(-10px);
+}
+
+.gift-ribbon {
+  position: absolute;
+  top: 0;
+  left: 45%;
+  right: 45%;
+  bottom: 0;
+  background: linear-gradient(to bottom, #FFD700, #FFA500);
+  transition: opacity 0.5s ease-out;
+}
+
+.gift-ribbon::before {
+  content: '';
+  position: absolute;
+  top: 25%;
+  left: -200%;
+  right: -200%;
+  height: 10%;
+  background: linear-gradient(to right, #FFD700, #FFA500);
+}
+
+.gift-ribbon-broken {
+  opacity: 0;
+  transform: scale(0);
+}
+
+@keyframes gift-glow {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.animate-gift-glow {
+  animation: gift-glow 2s ease-in-out infinite;
+}
+
+@keyframes gift-sparkle {
+  0%, 100% { 
+    opacity: 0;
+    transform: scale(0) rotate(0deg);
+  }
+  50% { 
+    opacity: 1;
+    transform: scale(1.5) rotate(180deg);
+  }
+}
+
+.animate-gift-sparkle {
+  animation: gift-sparkle 1.5s ease-in-out infinite;
+}
+
+/* =====================================================
+   GIFT BOX OPENING ANIMATIONS
+   ===================================================== */
+
+@keyframes gift-shake {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  10% { transform: rotate(-2deg) scale(1.02); }
+  20% { transform: rotate(2deg) scale(1.02); }
+  30% { transform: rotate(-2deg) scale(1.02); }
+  40% { transform: rotate(2deg) scale(1.02); }
+  50% { transform: rotate(-1deg) scale(1.01); }
+  60% { transform: rotate(1deg) scale(1.01); }
+  70% { transform: rotate(-1deg) scale(1.01); }
+  80% { transform: rotate(1deg) scale(1.01); }
+  90% { transform: rotate(0deg) scale(1); }
+}
+
+@keyframes box-lid-open {
+  0% { transform: rotateX(0deg) translateY(0px); }
+  50% { transform: rotateX(-45deg) translateY(-10px); }
+  100% { transform: rotateX(-90deg) translateY(-20px) translateX(15px); }
+}
+
+@keyframes box-open-bottom {
+  0% { transform: scaleY(1); }
+  100% { transform: scaleY(0.8); }
+}
+
+@keyframes ribbon-break {
+  0% { transform: scale(1) rotate(0deg); opacity: 1; }
+  50% { transform: scale(1.1) rotate(5deg); opacity: 0.8; }
+  100% { transform: scale(0) rotate(15deg); opacity: 0; }
+}
+
+@keyframes bow-untie {
+  0% { transform: scale(1) rotate(0deg); opacity: 1; }
+  50% { transform: scale(1.2) rotate(180deg); opacity: 0.5; }
+  100% { transform: scale(0) rotate(360deg); opacity: 0; }
+}
+
+@keyframes icon-emerge {
+  0% { 
+    transform: scale(0) rotate(-180deg); 
+    opacity: 0;
+    filter: blur(10px);
+  }
+  50% { 
+    transform: scale(1.2) rotate(-90deg); 
+    opacity: 0.8;
+    filter: blur(2px);
+  }
+  100% { 
+    transform: scale(1) rotate(0deg); 
+    opacity: 1;
+    filter: blur(0px);
+  }
+}
+
+@keyframes sparkle-burst {
+  0% { opacity: 0; transform: scale(0); }
+  50% { opacity: 1; transform: scale(1.5); }
+  100% { opacity: 0; transform: scale(0); }
+}
+
+@keyframes sparkle-fly {
+  0% { 
+    transform: rotate(var(--rotation, 0deg)) translateY(0px) scale(0);
+    opacity: 1;
+  }
+  100% { 
+    transform: rotate(var(--rotation, 0deg)) translateY(-40px) scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes float-particles {
+  0%, 100% { 
+    transform: translateY(0px) translateX(0px) rotate(0deg);
+    opacity: 0.3;
+  }
+  50% { 
+    transform: translateY(-20px) translateX(10px) rotate(180deg);
+    opacity: 0.8;
+  }
+}
+
+/* Theme-specific celebration burst animations */
+@keyframes celebration-burst {
+  0% { opacity: 0; transform: scale(0); }
+  10% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.5) translateY(-50px); }
+}
+
+@keyframes balloon-burst {
+  0% { 
+    transform: translateY(0px) scale(0);
+    opacity: 0;
+  }
+  20% { 
+    transform: translateY(-10px) scale(1.2);
+    opacity: 1;
+  }
+  100% { 
+    transform: translateY(-100px) scale(1) rotate(15deg);
+    opacity: 0;
+  }
+}
+
+@keyframes confetti-burst {
+  0% { 
+    transform: translateY(0px) rotate(0deg) scale(0);
+    opacity: 1;
+  }
+  100% { 
+    transform: translateY(-80px) rotate(720deg) scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes heart-burst {
+  0% { 
+    transform: scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  50% { 
+    transform: scale(1.3) rotate(180deg);
+    opacity: 1;
+  }
+  100% { 
+    transform: scale(1) rotate(360deg) translateY(-60px);
+    opacity: 0;
+  }
+}
+
+@keyframes star-burst {
+  0% { 
+    transform: scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  50% { 
+    transform: scale(1.5) rotate(180deg);
+    opacity: 1;
+  }
+  100% { 
+    transform: scale(1) rotate(360deg) translateY(-70px);
+    opacity: 0;
+  }
+}
+
+@keyframes flower-burst {
+  0% { 
+    transform: scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  30% { 
+    transform: scale(1.2) rotate(90deg);
+    opacity: 1;
+  }
+  100% { 
+    transform: scale(1) rotate(180deg) translateY(-50px);
+    opacity: 0;
+  }
+}
+
+@keyframes award-burst {
+  0% { 
+    transform: scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  40% { 
+    transform: scale(1.4) rotate(180deg);
+    opacity: 1;
+  }
+  100% { 
+    transform: scale(1) rotate(360deg) translateY(-80px);
+    opacity: 0;
+  }
+}
+
+@keyframes gift-burst {
+  0% { 
+    transform: scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  35% { 
+    transform: scale(1.3) rotate(120deg);
+    opacity: 1;
+  }
+  100% { 
+    transform: scale(1) rotate(240deg) translateY(-60px);
+    opacity: 0;
+  }
+}
+
+@keyframes music-burst {
+  0% { 
+    transform: scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  45% { 
+    transform: scale(1.2) rotate(270deg);
+    opacity: 1;
+  }
+  100% { 
+    transform: scale(1) rotate(540deg) translateY(-70px);
+    opacity: 0;
+  }
+}
+
+@keyframes calendar-burst {
+  0% { 
+    transform: scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  40% { 
+    transform: scale(1.3) rotate(180deg);
+    opacity: 1;
+  }
+  100% { 
+    transform: scale(1) rotate(360deg) translateY(-65px);
+    opacity: 0;
+  }
+}
+
+@keyframes gold-sparkle {
+  0%, 100% { 
+    opacity: 0;
+    transform: scale(0) rotate(0deg);
+  }
+  50% { 
+    opacity: 1;
+    transform: scale(2) rotate(180deg);
+  }
+}
+
+/* Animation classes */
+.animate-gift-shake {
+  animation: gift-shake 2s ease-in-out;
+}
+
+.animate-box-lid-open {
+  animation: box-lid-open 0.8s ease-out forwards;
+}
+
+.animate-box-open-bottom {
+  animation: box-open-bottom 0.8s ease-out forwards;
+}
+
+.animate-ribbon-break {
+  animation: ribbon-break 0.6s ease-out forwards;
+}
+
+.animate-bow-untie {
+  animation: bow-untie 0.7s ease-out forwards;
+}
+
+.animate-icon-emerge {
+  animation: icon-emerge 1s ease-out forwards;
+}
+
+.animate-sparkle-burst {
+  animation: sparkle-burst 1.5s ease-out infinite;
+}
+
+.animate-sparkle-fly {
+  animation: sparkle-fly 1s ease-out forwards;
+}
+
+.animate-float-particles {
+  animation: float-particles 6s ease-in-out infinite;
+}
+
+.animate-celebration-burst {
+  animation: celebration-burst 2s ease-out forwards;
+}
+
+.animate-balloon-burst {
+  animation: balloon-burst 2.5s ease-out forwards;
+}
+
+.animate-confetti-burst {
+  animation: confetti-burst 2s ease-out forwards;
+}
+
+.animate-heart-burst {
+  animation: heart-burst 2.2s ease-out forwards;
+}
+
+.animate-star-burst {
+  animation: star-burst 2.3s ease-out forwards;
+}
+
+.animate-flower-burst {
+  animation: flower-burst 2.8s ease-out forwards;
+}
+
+.animate-award-burst {
+  animation: award-burst 2.4s ease-out forwards;
+}
+
+.animate-gift-burst {
+  animation: gift-burst 2.6s ease-out forwards;
+}
+
+.animate-music-burst {
+  animation: music-burst 2.5s ease-out forwards;
+}
+
+.animate-calendar-burst {
+  animation: calendar-burst 2.4s ease-out forwards;
+}
+
+.animate-gold-sparkle {
+  animation: gold-sparkle 1.8s ease-in-out infinite;
+}
+
+/* =====================================================
+   WISH VIEW ENTRANCE ANIMATIONS
+   ===================================================== */
+
+@keyframes wish-entrance {
+  0% { 
+    opacity: 0;
+    transform: scale(0.8) translateY(40px) rotateX(15deg);
+    filter: blur(10px);
+  }
+  50% { 
+    opacity: 0.8;
+    transform: scale(1.05) translateY(-10px) rotateX(5deg);
+    filter: blur(2px);
+  }
+  100% { 
+    opacity: 1;
+    transform: scale(1) translateY(0px) rotateX(0deg);
+    filter: blur(0px);
+  }
+}
+
+@keyframes background-pulse {
+  0%, 100% { opacity: 0.08; }
+  50% { opacity: 0.12; }
+}
+
+@keyframes ambient-float {
+  0%, 100% { 
+    transform: translateY(0px) translateX(0px) rotate(0deg);
+    opacity: 0.2;
+  }
+  25% { 
+    transform: translateY(-15px) translateX(5px) rotate(90deg);
+    opacity: 0.6;
+  }
+  50% { 
+    transform: translateY(-10px) translateX(-5px) rotate(180deg);
+    opacity: 0.8;
+  }
+  75% { 
+    transform: translateY(-20px) translateX(3px) rotate(270deg);
+    opacity: 0.4;
+  }
+}
+
+.animate-wish-entrance {
+  animation: wish-entrance 1.2s ease-out forwards;
+}
+
+.animate-background-pulse {
+  animation: background-pulse 6s ease-in-out infinite;
+}
+
+.animate-ambient-float {
+  animation: ambient-float 8s ease-in-out infinite;
+}
+
+/* =====================================================
    ENHANCED BIRTHDAY THEME ANIMATIONS
    ===================================================== */
 
@@ -382,6 +1105,25 @@
     opacity: 1;
     transform: scale(1.5) rotate(180deg);
   }
+}
+
+@keyframes cake-appear {
+  0% { 
+    transform: scale(0) rotate(-10deg);
+    opacity: 0;
+  }
+  50% { 
+    transform: scale(1.2) rotate(5deg);
+    opacity: 0.8;
+  }
+  100% { 
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+.animate-cake-appear {
+  animation: cake-appear 1.5s ease-out forwards;
 }
 
 .animate-balloon-float-enhanced {

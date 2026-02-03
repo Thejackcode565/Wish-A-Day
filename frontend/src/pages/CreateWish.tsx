@@ -9,6 +9,7 @@ import { ImageUploader } from "@/components/ImageUploader";
 import { ExpirySelector, ExpiryType } from "@/components/ExpirySelector";
 import { ThemeSelector, WishTheme } from "@/components/ThemeSelector";
 import { CelebrationItems, CelebrationItem } from "@/components/CelebrationItems";
+import { SenderInfo } from "@/components/SenderInfo";
 import { ShareLink } from "@/components/ShareLink";
 import { WishCard } from "@/components/WishCard";
 import { createWish, uploadImage } from "@/services/api";
@@ -27,6 +28,8 @@ const CreateWish = () => {
   const [maxViews, setMaxViews] = useState<number>();
   const [images, setImages] = useState<File[]>([]);
   const [celebrationItems, setCelebrationItems] = useState<CelebrationItem[]>([]);
+  const [senderName, setSenderName] = useState("");
+  const [senderMessage, setSenderMessage] = useState("");
   
   // UI state
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -67,6 +70,8 @@ const CreateWish = () => {
         })),
         expires_at: expiryType === "time" && expiresAt ? expiresAt.toISOString() : undefined,
         max_views: expiryType === "views" ? maxViews : undefined,
+        sender_name: senderName.trim() || undefined,
+        sender_message: senderMessage.trim() || undefined,
       };
 
       const result = await createWish(payload);
@@ -156,6 +161,9 @@ const CreateWish = () => {
                 theme={theme}
                 images={images.map((f) => URL.createObjectURL(f))}
                 celebrationItems={celebrationItems}
+                senderName={senderName || undefined}
+                senderMessage={senderMessage || undefined}
+                isPreview={true}
               />
             </div>
           ) : (
@@ -209,8 +217,18 @@ const CreateWish = () => {
                 <ImageUploader images={images} onImagesChange={setImages} />
               </div>
 
+              {/* Sender Information */}
+              <div className="space-y-3 animate-slide-up" style={{ animationDelay: "0.3s" }}>
+                <SenderInfo
+                  senderName={senderName}
+                  onSenderNameChange={setSenderName}
+                  senderMessage={senderMessage}
+                  onSenderMessageChange={setSenderMessage}
+                />
+              </div>
+
               {/* Expiry */}
-              <div className="space-y-3 animate-slide-up" style={{ animationDelay: "0.25s" }}>
+              <div className="space-y-3 animate-slide-up" style={{ animationDelay: "0.35s" }}>
                 <Label>Expiry</Label>
                 <ExpirySelector
                   expiryType={expiryType}
@@ -223,7 +241,7 @@ const CreateWish = () => {
               </div>
 
               {/* Submit */}
-              <div className="pt-4 animate-slide-up" style={{ animationDelay: "0.3s" }}>
+              <div className="pt-4 animate-slide-up" style={{ animationDelay: "0.4s" }}>
                 <Button
                   type="submit"
                   variant="hero"

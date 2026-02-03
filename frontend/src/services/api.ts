@@ -14,6 +14,8 @@ export interface CreateWishPayload {
   celebration_items?: CelebrationItemPayload[];
   expires_at?: string;
   max_views?: number;
+  sender_name?: string;
+  sender_message?: string;
 }
 
 export interface WishResponse {
@@ -30,6 +32,8 @@ export interface Wish {
   images: string[];
   remaining_views?: number;
   created_at: string;
+  sender_name?: string;
+  sender_message?: string;
 }
 
 export interface UploadImageResponse {

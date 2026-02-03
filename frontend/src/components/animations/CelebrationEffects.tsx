@@ -180,7 +180,7 @@ const PopperEffect = ({ item }: { item: AnimatedItem }) => {
   );
 };
 
-// Gift animation - box opening with glow
+// Gift animation - enhanced box opening with glow and particles
 const GiftEffect = ({ item }: { item: AnimatedItem }) => {
   const [opened, setOpened] = useState(false);
   
@@ -198,6 +198,74 @@ const GiftEffect = ({ item }: { item: AnimatedItem }) => {
         animationDelay: `${item.delay}s`,
       }}
     >
+      <div className="relative">
+        {/* Gift box with enhanced opening animation */}
+        <div 
+          className={cn(
+            "gift-box transition-all duration-700",
+            opened && "gift-box-opened"
+          )}
+          style={{ 
+            backgroundColor: item.color,
+            width: item.size * 1.8,
+            height: item.size * 1.5,
+          }}
+        >
+          {/* Box lid */}
+          <div 
+            className={cn(
+              "gift-lid transition-all duration-700",
+              opened && "gift-lid-opened"
+            )}
+            style={{ backgroundColor: item.color }}
+          />
+          
+          {/* Ribbon */}
+          <div 
+            className={cn(
+              "gift-ribbon transition-all duration-500",
+              opened && "gift-ribbon-broken"
+            )}
+          />
+          
+          {/* Glow effect when opened */}
+          {opened && (
+            <div className="absolute inset-0 animate-gift-glow">
+              <div 
+                className="w-full h-full rounded-md"
+                style={{ 
+                  boxShadow: `0 0 20px ${item.color}, 0 0 40px ${item.color}40`,
+                }}
+              />
+            </div>
+          )}
+          
+          {/* Sparkle particles when opened */}
+          {opened && (
+            <div className="absolute inset-0">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute w-1 h-1 bg-yellow-300 rounded-full animate-gift-sparkle"
+                  style={{
+                    left: `${20 + i * 10}%`,
+                    top: `${10 + (i % 3) * 20}%`,
+                    animationDelay: `${i * 0.1}s`,
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+        
+        <Gift 
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white/60"
+          style={{ width: item.size, height: item.size }}
+        />
+      </div>
+    </div>
+  );
+};
       <div className={`gift-box ${opened ? 'opened' : ''}`}>
         <div 
           className="gift-lid"
