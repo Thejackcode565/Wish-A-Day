@@ -1,9 +1,17 @@
 const API_BASE = "/api";
 
+export interface CelebrationItemPayload {
+  type: "chocolates" | "cake" | "balloons" | "poppers" | "gifts" | "confetti";
+  quantity: number;
+  color?: string;
+  message?: string;
+}
+
 export interface CreateWishPayload {
   title?: string;
   message: string;
   theme: string;
+  celebration_items?: CelebrationItemPayload[];
   expires_at?: string;
   max_views?: number;
 }
@@ -18,6 +26,7 @@ export interface Wish {
   title?: string;
   message: string;
   theme: string;
+  celebration_items?: CelebrationItemPayload[];
   images: string[];
   remaining_views?: number;
   created_at: string;

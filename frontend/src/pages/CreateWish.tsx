@@ -59,6 +59,12 @@ const CreateWish = () => {
         title: title.trim() || undefined,
         message: message.trim(),
         theme,
+        celebration_items: celebrationItems.map(item => ({
+          type: item.type,
+          quantity: item.quantity,
+          color: item.color,
+          message: item.message,
+        })),
         expires_at: expiryType === "time" && expiresAt ? expiresAt.toISOString() : undefined,
         max_views: expiryType === "views" ? maxViews : undefined,
       };

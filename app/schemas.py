@@ -6,12 +6,21 @@ from typing import List, Optional
 from pydantic import BaseModel, Field, ConfigDict, model_validator
 
 
+class CelebrationItemSchema(BaseModel):
+    """Schema for a celebration item."""
+    type: str = Field(..., description="Type of celebration item (chocolates, cake, balloons, poppers, gifts, confetti)")
+    quantity: int = Field(default=1, ge=1, le=99)
+    color: Optional[str] = Field(None, description="Custom color for the item")
+    message: Optional[str] = Field(None, max_length=50)
+
+
 class WishCreate(BaseModel):
     """Schema for creating a new wish."""
     
     title: Optional[str] = Field(None, max_length=255)
     message: str = Field(..., min_length=1, max_length=5000)
     theme: str = Field(default="default", max_length=50)
+    celebration_items: Optional[List[CelebrationItemSchema]] = Field(default_factory=list, description="List of celebration items to display")
     expires_at: Optional[datetime] = None
     max_views: Optional[int] = Field(None, ge=1, le=1000)
     
@@ -65,6 +74,7 @@ class WishViewResponse(BaseModel):
     title: Optional[str]
     message: str
     theme: str
+    celebration_items: List[dict] = Field(default_factory=list)
     images: List[str]
     remaining_views: Optional[int]
     

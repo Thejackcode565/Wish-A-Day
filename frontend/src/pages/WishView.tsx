@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import
+{ useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Loader2, Sparkles, HeartCrack, Ghost } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CelebrationItem } from "@/components/CelebrationItems";
 import { WishCard } from "@/components/WishCard";
 import { WishTheme } from "@/components/ThemeSelector";
 import { getWish, Wish } from "@/services/api";
@@ -12,6 +14,18 @@ type WishState =
   | { status: "not_found" }
   | { status: "expired" }
   | { status: "error" };
+
+// Transform API celebration items to CelebrationItem format
+const transformCelebrationItems = (items?: any[]): CelebrationItem[] => {
+  if (!items || !Array.isArray(items)) return [];
+  return items.map((item, index) => ({
+    id: `item-${index}`,
+    type: item.type as CelebrationItem["type"],
+    quantity: item.quantity || 1,
+    color: item.color,
+    message: item.message,
+  }));
+};
 
 const WishView = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -46,7 +60,8 @@ const WishView = () => {
 
   // Loading state
   if (state.status === "loading") {
-    return (
+    // @ts-ignore
+      return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <div className="w-16 h-16 mx-auto mb-4 rounded-full gradient-button flex items-center justify-center animate-pulse">
@@ -137,6 +152,7 @@ const WishView = () => {
               message={wish.message}
               theme={wish.theme as WishTheme}
               images={wish.images}
+              celebrationItems={transformCelebrationItems(wish.celebration_items)}
               remainingViews={wish.remaining_views}
             />
           </div>

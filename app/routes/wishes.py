@@ -119,11 +119,13 @@ async def create_wish(
     
     # Create wish
     ip_hash = get_client_ip_hash(client_ip)
+    celebration_items_list = [item.model_dump() for item in wish_data.celebration_items] if wish_data.celebration_items else []
     wish = Wish(
         slug=slug,
         title=wish_data.title,
         message=wish_data.message,
         theme=wish_data.theme,
+        celebration_items=celebration_items_list,
         expires_at=wish_data.expires_at,
         max_views=wish_data.max_views,
         ip_hash=ip_hash
@@ -197,11 +199,13 @@ async def view_wish(slug: str, db: Session = Depends(get_db)):
     # Build response
     image_urls = [img.url for img in wish.images]
     remaining_views = wish.max_views - wish.current_views if wish.max_views else None
+    celebration_items = wish.celebration_items if wish.celebration_items else []
     
     return WishViewResponse(
         title=wish.title,
         message=wish.message,
         theme=wish.theme,
+        celebration_items=celebration_items,
         images=image_urls,
         remaining_views=max(0, remaining_views) if remaining_views is not None else None
     )
