@@ -19,7 +19,7 @@ class Wish(Base):
     title: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     message: Mapped[str] = mapped_column(Text, nullable=False)
     theme: Mapped[str] = mapped_column(String(50), default="default")
-    celebration_items: Mapped[List[dict]] = mapped_column(JSON, default_factory=list, nullable=True)
+    celebration_items: Mapped[Optional[List[dict]]] = mapped_column(JSON, default=None, nullable=True)
     expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     max_views: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     current_views: Mapped[int] = mapped_column(Integer, default=0)
