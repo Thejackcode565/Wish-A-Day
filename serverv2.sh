@@ -32,6 +32,8 @@
 #   logs        - Show recent logs
 #   test        - Test all endpoints
 #   update      - Update application from git
+#   clearcache  - Clear caches and temp files (keeps venv/node_modules)
+#   pullandrebuild - Pull latest code and rebuild only what changed
 #   backup      - Create system backup
 #   restore     - Restore from backup
 #   monitor     - Real-time monitoring
@@ -1341,6 +1343,119 @@ update_application() {
     log_success "Application updated successfully!"
 }
 
+# Clear caches and temp files (keeps venv/node_modules)
+clear_cache() {
+    log_header "Clearing Caches and Temp Files"
+    echo ""
+    
+    cd "$APP_DIR" || {
+        log_error "Application directory not found: $APP_DIR"
+        return 1
+    }
+    
+    # Clean old logs (keep last 7 days)
+    log_step "Cleaning old logs"
+    if [[ -d "logs" ]]; then
+        find logs/ -name "*.log" -mtime +7 -delete 2>/dev/null || true
+        find logs/ -name "*.log.*" -mtime +7 -delete 2>/dev/null || true
+        log_info "Cleaned old log files"
+    fi
+    
+    # Clean temporary files
+    log_step "Cleaning temporary files"
+    rm -rf /tmp/wishaday_* 2>/dev/null || true
+    rm -rf /tmp/test_image_* 2>/dev/null || true
+    
+    # Clean pip cache
+    log_step "Cleaning pip cache"
+    sudo -u "$WISHADAY_USER" bash -c "pip cache purge" 2>/dev/null || true
+    
+    # Clean npm cache
+    if command -v npm >/dev/null 2>&1; then
+        log_step "Cleaning npm cache"
+        sudo -u "$WISHADAY_USER" bash -c "npm cache clean --force" 2>/dev/null || true
+    fi
+    
+    log_success "Caches cleared successfully!"
+    log_info "Kept: venv and node_modules (for faster rebuilds)"
+}
+
+# Pull latest code and rebuild only what changed
+pull_and_rebuild() {
+    log_header "Pull and Rebuild (Smart)"
+    echo ""
+    
+    if [[ ! -d "$APP_DIR/.git" ]]; then
+        log_error "No git repository found. Cannot pull automatically."
+        return 1
+    fi
+    
+    # Stop service before updating
+    systemctl stop "$SERVICE_NAME" 2>/dev/null || true
+    
+    cd "$APP_DIR"
+    local pre_hash
+    local post_hash
+    pre_hash=$(git rev-parse HEAD 2>/dev/null || echo "")
+    
+    log_step "Pulling latest code"
+    sudo -u "$WISHADAY_USER" git pull || return 1
+    
+    post_hash=$(git rev-parse HEAD 2>/dev/null || echo "")
+    if [[ -n "$pre_hash" && "$pre_hash" == "$post_hash" ]]; then
+        log_info "No new commits. Skipping rebuild."
+        systemctl start "$SERVICE_NAME"
+        return 0
+    fi
+    
+    local changed_files
+    changed_files=$(git diff --name-only "$pre_hash" "$post_hash" 2>/dev/null || echo "")
+    
+    local needs_python=0
+    local needs_frontend=0
+    
+    if echo "$changed_files" | grep -qE '^(app/|scripts/|pyproject\.toml|requirements\.txt|alembic\.ini|migrations/)'; then
+        needs_python=1
+    fi
+    
+    if echo "$changed_files" | grep -qE '^(frontend/)'; then
+        needs_frontend=1
+    fi
+    
+    if [[ $needs_python -eq 1 ]]; then
+        log_step "Updating Python dependencies"
+        sudo -u "$WISHADAY_USER" bash -c "
+            source venv/bin/activate
+            if [[ -f 'pyproject.toml' ]]; then
+                pip install -e .
+            fi
+        "
+    else
+        log_info "No backend changes detected; skipping Python install"
+    fi
+    
+    if [[ $needs_frontend -eq 1 && -d "$APP_DIR/frontend" ]]; then
+        log_step "Rebuilding frontend"
+        cd "$APP_DIR/frontend"
+        sudo -u "$WISHADAY_USER" bash -c "
+            npm install
+            npm run build
+        "
+        cd "$APP_DIR"
+    else
+        log_info "No frontend changes detected; skipping frontend build"
+    fi
+    
+    # Fix permissions and restart service
+    fix_all_permissions
+    systemctl start "$SERVICE_NAME"
+    
+    show_progress 5 "Waiting for service to start"
+    test_connectivity
+    
+    log_success "Pull and rebuild completed successfully!"
+}
+
 # Create backup
 create_backup() {
     log_header "Creating System Backup"
@@ -1969,6 +2084,8 @@ show_help() {
     echo "  fix-env     - Fix environment configuration"
     echo "  fix-upload  - Fix image upload 500 errors"
     echo "  update      - Update application from git"
+    echo "  clearcache  - Clear caches and temp files (keeps venv/node_modules)"
+    echo "  pullandrebuild - Pull latest code and rebuild only what changed"
     echo "  clean       - Clean build artifacts and temporary files"
     echo "  rebuild     - Complete rebuild (clean + install + build)"
     echo ""
@@ -2076,6 +2193,14 @@ main() {
         "update")
             check_root
             update_application
+            ;;
+        "clearcache")
+            check_root
+            clear_cache
+            ;;
+        "pullandrebuild")
+            check_root
+            pull_and_rebuild
             ;;
         "backup")
             check_root
