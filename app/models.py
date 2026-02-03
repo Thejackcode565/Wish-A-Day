@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey, func, JSON
+from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey, func
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 from app.database import Base
@@ -30,7 +30,6 @@ class Wish(Base):
     )
     deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     ip_hash: Mapped[str] = mapped_column(String(64), nullable=False)
-    celebration_items: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
     
     # Relationship to images
     images: Mapped[List["WishImage"]] = relationship(

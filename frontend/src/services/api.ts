@@ -1,9 +1,4 @@
-import type { CelebrationItem } from "@/components/CelebrationItems";
-
 const API_BASE = "/api";
-
-// Re-export CelebrationItem for consistency across the app
-export type { CelebrationItem } from "@/components/CelebrationItems";
 
 export interface CreateWishPayload {
   title?: string;
@@ -11,7 +6,6 @@ export interface CreateWishPayload {
   theme: string;
   expires_at?: string;
   max_views?: number;
-  celebration_items?: CelebrationItem[];
 }
 
 export interface WishResponse {
@@ -27,7 +21,6 @@ export interface Wish {
   images: string[];
   remaining_views?: number;
   created_at: string;
-  celebration_items?: CelebrationItem[];
 }
 
 export interface UploadImageResponse {

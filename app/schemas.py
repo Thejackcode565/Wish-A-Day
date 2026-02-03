@@ -6,26 +6,6 @@ from typing import List, Optional
 from pydantic import BaseModel, Field, ConfigDict, model_validator
 
 
-class CelebrationItem(BaseModel):
-    """Schema for a celebration item."""
-    
-    id: str
-    type: str
-    quantity: int = Field(..., ge=1, le=99)
-    color: Optional[str] = None
-    message: Optional[str] = None
-    
-    model_config = ConfigDict(json_schema_extra={
-        "example": {
-            "id": "cake-1234567890",
-            "type": "cake",
-            "quantity": 1,
-            "color": "#FF69B4",
-            "message": "Happy Birthday!"
-        }
-    })
-
-
 class WishCreate(BaseModel):
     """Schema for creating a new wish."""
     
@@ -34,7 +14,6 @@ class WishCreate(BaseModel):
     theme: str = Field(default="default", max_length=50)
     expires_at: Optional[datetime] = None
     max_views: Optional[int] = Field(None, ge=1, le=1000)
-    celebration_items: Optional[List[CelebrationItem]] = None
     
     @model_validator(mode='after')
     def validate_expiry(self):
@@ -49,16 +28,7 @@ class WishCreate(BaseModel):
             "message": "Have a great day!",
             "theme": "birthday",
             "expires_at": "2026-02-05T10:00:00Z",
-            "max_views": 1,
-            "celebration_items": [
-                {
-                    "id": "cake-1234567890",
-                    "type": "cake",
-                    "quantity": 1,
-                    "color": "#FF69B4",
-                    "message": "Happy Birthday!"
-                }
-            ]
+            "max_views": 1
         }
     })
 
@@ -97,7 +67,6 @@ class WishViewResponse(BaseModel):
     theme: str
     images: List[str]
     remaining_views: Optional[int]
-    celebration_items: Optional[List[CelebrationItem]] = None
     
     model_config = ConfigDict(json_schema_extra={
         "example": {
@@ -105,16 +74,7 @@ class WishViewResponse(BaseModel):
             "message": "Have a great day!",
             "theme": "birthday",
             "images": ["/media/wishes/123/image1.webp", "/media/wishes/123/image2.webp"],
-            "remaining_views": 0,
-            "celebration_items": [
-                {
-                    "id": "cake-1234567890",
-                    "type": "cake",
-                    "quantity": 1,
-                    "color": "#FF69B4",
-                    "message": "Happy Birthday!"
-                }
-            ]
+            "remaining_views": 0
         }
     })
 

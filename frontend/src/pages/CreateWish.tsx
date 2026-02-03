@@ -61,7 +61,6 @@ const CreateWish = () => {
         theme,
         expires_at: expiryType === "time" && expiresAt ? expiresAt.toISOString() : undefined,
         max_views: expiryType === "views" ? maxViews : undefined,
-        celebration_items: celebrationItems.length > 0 ? celebrationItems : undefined,
       };
 
       const result = await createWish(payload);

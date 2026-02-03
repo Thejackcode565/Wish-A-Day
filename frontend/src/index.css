@@ -252,7 +252,26 @@
   }
 }
 
-/* Animations */
+/* =====================================================
+   COMPREHENSIVE ANIMATION SYSTEM
+   Theme-specific & Celebration Item Animations
+   Mobile-optimized, GPU-accelerated
+   ===================================================== */
+
+/* Base floating animation container */
+.theme-animation-container {
+  @apply absolute inset-0 overflow-hidden pointer-events-none;
+}
+
+.floating-element {
+  @apply absolute pointer-events-none;
+  will-change: transform, opacity;
+}
+
+/* =====================================================
+   CORE ANIMATIONS
+   ===================================================== */
+
 @keyframes float {
   0%, 100% { transform: translateY(0px) rotate(0deg); }
   50% { transform: translateY(-20px) rotate(5deg); }
@@ -261,18 +280,6 @@
 @keyframes sparkle {
   0%, 100% { opacity: 0; transform: scale(0); }
   50% { opacity: 1; transform: scale(1); }
-}
-
-@keyframes confetti-fall {
-  0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
-  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
-}
-
-@keyframes heart-beat {
-  0%, 100% { transform: scale(1); }
-  25% { transform: scale(1.1); }
-  50% { transform: scale(1); }
-  75% { transform: scale(1.05); }
 }
 
 @keyframes slide-up {
@@ -285,16 +292,941 @@
   to { opacity: 1; }
 }
 
+@keyframes heart-beat {
+  0%, 100% { transform: scale(1); }
+  25% { transform: scale(1.1); }
+  50% { transform: scale(1); }
+  75% { transform: scale(1.05); }
+}
+
+/* =====================================================
+   DEFAULT THEME - Subtle & Elegant
+   ===================================================== */
+
+@keyframes gentle-float {
+  0%, 100% { 
+    transform: translateY(100vh) rotate(0deg); 
+    opacity: 0;
+  }
+  10% { opacity: 0.6; }
+  90% { opacity: 0.6; }
+  100% { 
+    transform: translateY(-20vh) rotate(360deg); 
+    opacity: 0;
+  }
+}
+
+.animate-gentle-float {
+  animation: gentle-float 12s ease-in-out infinite;
+}
+
+/* =====================================================
+   BIRTHDAY THEME - Fun & Playful
+   ===================================================== */
+
+@keyframes balloon-float {
+  0% { 
+    transform: translateY(120vh) rotate(0deg);
+    opacity: 0;
+  }
+  10% { opacity: 1; }
+  100% { 
+    transform: translateY(-30vh) rotate(-15deg);
+    opacity: 0.8;
+  }
+}
+
+@keyframes bounce-pop {
+  0%, 100% { transform: scale(1) rotate(-5deg); }
+  25% { transform: scale(1.15) rotate(5deg); }
+  50% { transform: scale(1.05) rotate(-3deg); }
+  75% { transform: scale(1.1) rotate(3deg); }
+}
+
+@keyframes confetti-burst {
+  0% { 
+    transform: translateY(0) rotate(0deg) scale(0);
+    opacity: 1;
+  }
+  50% { opacity: 1; }
+  100% { 
+    transform: translateY(100vh) rotate(720deg) scale(1);
+    opacity: 0;
+  }
+}
+
+.animate-balloon-float {
+  animation: balloon-float 8s ease-out infinite;
+}
+
+.animate-bounce-pop {
+  animation: bounce-pop 2s ease-in-out infinite;
+}
+
+.animate-confetti-burst {
+  animation: confetti-burst 4s ease-out infinite;
+}
+
+.balloon-shape {
+  @apply rounded-full relative;
+  background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, transparent 50%);
+}
+
+.balloon-shape::before {
+  content: '';
+  @apply absolute bottom-0 left-1/2 -translate-x-1/2;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 10px solid inherit;
+}
+
+.balloon-string {
+  @apply absolute left-1/2 -translate-x-1/2;
+  width: 1px;
+  background: rgba(0,0,0,0.3);
+  top: 100%;
+}
+
+.confetti-piece {
+  @apply absolute rounded-sm;
+  width: 8px;
+  height: 12px;
+}
+
+/* =====================================================
+   LOVE THEME - Romantic & Soft
+   ===================================================== */
+
+@keyframes heart-rise {
+  0% { 
+    transform: translateY(100vh) scale(0.5);
+    opacity: 0;
+  }
+  10% { opacity: 0.8; }
+  90% { opacity: 0.8; }
+  100% { 
+    transform: translateY(-20vh) scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes petal-fall {
+  0% { 
+    transform: translateY(-10vh) rotate(0deg) translateX(0);
+    opacity: 0;
+  }
+  10% { opacity: 0.7; }
+  100% { 
+    transform: translateY(110vh) rotate(360deg) translateX(50px);
+    opacity: 0;
+  }
+}
+
+.animate-heart-rise {
+  animation: heart-rise 8s ease-in-out infinite;
+}
+
+.animate-petal-fall {
+  animation: petal-fall 10s ease-in-out infinite;
+}
+
+.rose-petal {
+  @apply rounded-full;
+  background: linear-gradient(135deg, #ff6b8a, #ff8fa3);
+  transform: rotate(45deg);
+}
+
+.glow-orb {
+  @apply absolute rounded-full;
+  background: radial-gradient(circle, hsl(var(--theme-love-from) / 0.3), transparent);
+  filter: blur(40px);
+}
+
+.glow-orb-1 {
+  width: 200px;
+  height: 200px;
+  top: 10%;
+  left: 10%;
+  animation: float 8s ease-in-out infinite;
+}
+
+.glow-orb-2 {
+  width: 150px;
+  height: 150px;
+  bottom: 20%;
+  right: 15%;
+  animation: float 10s ease-in-out infinite reverse;
+}
+
+/* =====================================================
+   CELEBRATION THEME - High Energy
+   ===================================================== */
+
+@keyframes star-burst {
+  0%, 100% { 
+    transform: scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  50% { 
+    transform: scale(1.2) rotate(180deg);
+    opacity: 1;
+  }
+}
+
+@keyframes confetti-fall {
+  0% { 
+    transform: translateY(-10vh) rotate(0deg);
+    opacity: 1;
+  }
+  100% { 
+    transform: translateY(110vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+.animate-star-burst {
+  animation: star-burst 3s ease-in-out infinite;
+}
+
+.animate-confetti-fall {
+  animation: confetti-fall 5s linear infinite;
+}
+
+.firework {
+  @apply absolute rounded-full;
+  width: 4px;
+  height: 4px;
+  background: hsl(var(--accent));
+}
+
+.firework::before,
+.firework::after {
+  content: '';
+  @apply absolute rounded-full;
+  width: 100%;
+  height: 100%;
+  background: inherit;
+}
+
+.firework-1 {
+  top: 15%;
+  left: 20%;
+  animation: star-burst 2.5s ease-out infinite;
+  box-shadow: 
+    20px -20px 0 hsl(var(--primary)),
+    -20px -20px 0 hsl(var(--accent)),
+    20px 20px 0 #FFE66D,
+    -20px 20px 0 #4ECDC4;
+}
+
+.firework-2 {
+  top: 25%;
+  right: 25%;
+  animation: star-burst 3s ease-out infinite 1s;
+  box-shadow: 
+    15px -15px 0 #FF69B4,
+    -15px -15px 0 #9370DB,
+    15px 15px 0 #FFD700,
+    -15px 15px 0 #00CED1;
+}
+
+.firework-3 {
+  top: 40%;
+  left: 60%;
+  animation: star-burst 2.8s ease-out infinite 0.5s;
+  box-shadow: 
+    18px -18px 0 hsl(var(--primary)),
+    -18px -18px 0 hsl(var(--accent)),
+    18px 18px 0 #F38181,
+    -18px 18px 0 #95E1D3;
+}
+
+/* =====================================================
+   WEDDING THEME - Elegant & Graceful
+   ===================================================== */
+
+@keyframes gentle-sway {
+  0%, 100% { 
+    transform: translateY(100vh) rotate(-10deg);
+    opacity: 0;
+  }
+  10% { opacity: 0.6; }
+  90% { opacity: 0.6; }
+  100% { 
+    transform: translateY(-20vh) rotate(10deg);
+    opacity: 0;
+  }
+}
+
+@keyframes golden-shimmer {
+  0%, 100% { 
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  50% { 
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+.animate-gentle-sway {
+  animation: gentle-sway 15s ease-in-out infinite;
+}
+
+.animate-golden-shimmer {
+  animation: golden-shimmer 4s ease-in-out infinite;
+}
+
+.ribbon {
+  @apply absolute;
+  width: 3px;
+  height: 100px;
+  background: linear-gradient(180deg, rgba(212,175,55,0.6), rgba(212,175,55,0.1));
+}
+
+.ribbon-left {
+  top: 0;
+  left: 15%;
+  transform: rotate(15deg);
+  animation: gentle-sway 8s ease-in-out infinite;
+}
+
+.ribbon-right {
+  top: 0;
+  right: 15%;
+  transform: rotate(-15deg);
+  animation: gentle-sway 8s ease-in-out infinite reverse;
+}
+
+/* =====================================================
+   VALENTINE THEME - Romantic & Charming
+   ===================================================== */
+
+@keyframes heart-pulse {
+  0%, 100% { 
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  50% { 
+    transform: scale(1.3);
+    opacity: 1;
+  }
+}
+
+@keyframes float-gentle {
+  0%, 100% { 
+    transform: translateY(0) rotate(0deg);
+  }
+  50% { 
+    transform: translateY(-30px) rotate(10deg);
+  }
+}
+
+.animate-heart-pulse {
+  animation: heart-pulse 2s ease-in-out infinite;
+}
+
+.animate-float-gentle {
+  animation: float-gentle 6s ease-in-out infinite;
+}
+
+.romantic-glow {
+  @apply absolute rounded-full;
+  background: radial-gradient(circle, hsl(var(--theme-valentine-from) / 0.4), transparent);
+  filter: blur(50px);
+}
+
+.romantic-glow-1 {
+  width: 180px;
+  height: 180px;
+  top: 5%;
+  right: 10%;
+  animation: heart-pulse 4s ease-in-out infinite;
+}
+
+.romantic-glow-2 {
+  width: 140px;
+  height: 140px;
+  bottom: 15%;
+  left: 15%;
+  animation: heart-pulse 5s ease-in-out infinite 1s;
+}
+
+/* =====================================================
+   CONGRATULATIONS THEME - Uplifting & Bold
+   ===================================================== */
+
+@keyframes star-shine {
+  0%, 100% { 
+    transform: scale(0.5) rotate(0deg);
+    opacity: 0;
+  }
+  50% { 
+    transform: scale(1.2) rotate(180deg);
+    opacity: 1;
+  }
+}
+
+@keyframes trophy-shine {
+  0%, 100% { 
+    filter: drop-shadow(0 0 5px rgba(255,215,0,0.5));
+    transform: scale(1);
+  }
+  50% { 
+    filter: drop-shadow(0 0 20px rgba(255,215,0,0.8));
+    transform: scale(1.1);
+  }
+}
+
+@keyframes gold-fall {
+  0% { 
+    transform: translateY(-10vh) rotate(0deg);
+    opacity: 1;
+  }
+  100% { 
+    transform: translateY(110vh) rotate(540deg);
+    opacity: 0;
+  }
+}
+
+.animate-star-shine {
+  animation: star-shine 3s ease-in-out infinite;
+}
+
+.animate-trophy-shine {
+  animation: trophy-shine 2s ease-in-out infinite;
+}
+
+.animate-gold-fall {
+  animation: gold-fall 4s linear infinite;
+}
+
+/* =====================================================
+   THANKS/APPRECIATION THEME - Warm & Gentle
+   ===================================================== */
+
+@keyframes gentle-rise {
+  0% { 
+    transform: translateY(100vh) scale(0.8);
+    opacity: 0;
+  }
+  20% { opacity: 0.6; }
+  80% { opacity: 0.6; }
+  100% { 
+    transform: translateY(-20vh) scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes warm-sparkle {
+  0%, 100% { 
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  50% { 
+    opacity: 0.8;
+    transform: scale(1);
+  }
+}
+
+.animate-gentle-rise {
+  animation: gentle-rise 12s ease-in-out infinite;
+}
+
+.animate-warm-sparkle {
+  animation: warm-sparkle 4s ease-in-out infinite;
+}
+
+/* =====================================================
+   FESTIVAL THEME - Colorful & Rhythmic
+   ===================================================== */
+
+@keyframes lantern-float {
+  0% { 
+    transform: translateY(110vh) rotate(-5deg);
+    opacity: 0;
+  }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { 
+    transform: translateY(-20vh) rotate(5deg);
+    opacity: 0;
+  }
+}
+
+@keyframes music-float {
+  0%, 100% { 
+    transform: translateY(0) rotate(-15deg);
+    opacity: 0.5;
+  }
+  50% { 
+    transform: translateY(-40px) rotate(15deg);
+    opacity: 1;
+  }
+}
+
+.animate-lantern-float {
+  animation: lantern-float 10s ease-in-out infinite;
+}
+
+.animate-music-float {
+  animation: music-float 4s ease-in-out infinite;
+}
+
+.lantern {
+  @apply rounded-lg relative;
+  box-shadow: 0 0 15px currentColor;
+}
+
+.lantern::before {
+  content: '';
+  @apply absolute -top-2 left-1/2 -translate-x-1/2;
+  width: 40%;
+  height: 8px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 4px 4px 0 0;
+}
+
+.lantern-glow {
+  @apply absolute inset-0 rounded-lg;
+  background: radial-gradient(circle at center, rgba(255,255,255,0.4), transparent);
+  animation: heart-pulse 2s ease-in-out infinite;
+}
+
+.festival-lights {
+  @apply absolute top-0 left-0 right-0;
+  height: 4px;
+  background: linear-gradient(90deg, 
+    #FF6B6B 0%, #FFE66D 20%, #4ECDC4 40%, 
+    #AA96DA 60%, #F38181 80%, #95E1D3 100%);
+  animation: shimmer 3s linear infinite;
+}
+
+/* =====================================================
+   EVENT THEME - Modern & Professional
+   ===================================================== */
+
+@keyframes geometric-float {
+  0%, 100% { 
+    transform: rotate(0deg) scale(1);
+    opacity: 0.3;
+  }
+  50% { 
+    transform: rotate(90deg) scale(1.2);
+    opacity: 0.6;
+  }
+}
+
+@keyframes slide-accent {
+  0% { 
+    transform: translateY(100vh);
+    opacity: 0;
+  }
+  50% { opacity: 0.5; }
+  100% { 
+    transform: translateY(-20vh);
+    opacity: 0;
+  }
+}
+
+.animate-geometric-float {
+  animation: geometric-float 8s ease-in-out infinite;
+}
+
+.animate-slide-accent {
+  animation: slide-accent 10s ease-in-out infinite;
+}
+
+.geometric-shape {
+  @apply border-2 rounded-lg;
+  background: transparent;
+}
+
+.spotlight {
+  @apply absolute rounded-full;
+  background: radial-gradient(circle, hsl(var(--theme-event-from) / 0.2), transparent);
+  filter: blur(30px);
+}
+
+.spotlight-1 {
+  width: 200px;
+  height: 200px;
+  top: 0;
+  left: 30%;
+  animation: float 6s ease-in-out infinite;
+}
+
+.spotlight-2 {
+  width: 150px;
+  height: 150px;
+  bottom: 20%;
+  right: 20%;
+  animation: float 8s ease-in-out infinite reverse;
+}
+
+/* =====================================================
+   CELEBRATION ITEM EFFECTS
+   ===================================================== */
+
+/* Chocolate - Smooth slide-in */
+@keyframes chocolate-slide {
+  0% { 
+    transform: translateX(-100px) rotate(-20deg);
+    opacity: 0;
+  }
+  100% { 
+    transform: translateX(0) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+.animate-chocolate-slide {
+  animation: chocolate-slide 0.8s ease-out forwards;
+}
+
+.chocolate-wrapper {
+  @apply flex items-center justify-center;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+/* Cake - Bounce with candle */
+@keyframes cake-bounce {
+  0% { 
+    transform: translateY(50px) scale(0.8);
+    opacity: 0;
+  }
+  60% { 
+    transform: translateY(-10px) scale(1.05);
+    opacity: 1;
+  }
+  100% { 
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes flame-flicker {
+  0%, 100% { 
+    transform: scaleY(1) rotate(-2deg);
+    opacity: 1;
+  }
+  50% { 
+    transform: scaleY(1.2) rotate(2deg);
+    opacity: 0.8;
+  }
+}
+
+.animate-cake-bounce {
+  animation: cake-bounce 1s ease-out forwards;
+}
+
+.animate-flame-flicker {
+  animation: flame-flicker 0.3s ease-in-out infinite;
+}
+
+.cake-base {
+  @apply relative rounded-lg;
+  box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+}
+
+.cake-frosting {
+  @apply absolute top-0 left-0 right-0;
+  height: 30%;
+  background: rgba(255,255,255,0.7);
+  border-radius: 8px 8px 0 0;
+}
+
+.cake-candle {
+  @apply absolute -top-4 left-1/2 -translate-x-1/2;
+  width: 4px;
+  height: 16px;
+  background: linear-gradient(180deg, #FFE66D, #FF6B6B);
+  border-radius: 2px;
+}
+
+.candle-flame {
+  @apply absolute -top-3 left-1/2 -translate-x-1/2;
+  width: 8px;
+  height: 12px;
+  background: radial-gradient(ellipse at bottom, #FFA500, #FF4500, transparent);
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+}
+
+/* Balloon - Float upward with sway */
+@keyframes balloon-rise {
+  0% { 
+    transform: translateY(110vh) rotate(0deg);
+    opacity: 0;
+  }
+  10% { opacity: 1; }
+  100% { 
+    transform: translateY(-30vh) rotate(-10deg);
+    opacity: 0.9;
+  }
+}
+
+.animate-balloon-rise {
+  animation: balloon-rise 8s ease-out infinite;
+}
+
+.balloon-container {
+  @apply relative;
+}
+
+.balloon {
+  @apply relative rounded-full;
+  background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, transparent 50%);
+}
+
+.balloon-shine {
+  @apply absolute top-2 left-2 rounded-full;
+  width: 30%;
+  height: 30%;
+  background: rgba(255,255,255,0.5);
+}
+
+/* Popper - Burst effect */
+@keyframes popper-shake {
+  0%, 100% { transform: rotate(-5deg); }
+  50% { transform: rotate(5deg); }
+}
+
+@keyframes burst-fly {
+  0% { 
+    transform: translateX(0) translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% { 
+    transform: translateX(var(--tx, 50px)) translateY(var(--ty, -50px)) scale(0);
+    opacity: 0;
+  }
+}
+
+.animate-popper-shake {
+  animation: popper-shake 0.2s ease-in-out infinite;
+}
+
+.animate-burst-fly {
+  animation: burst-fly 0.8s ease-out forwards;
+}
+
+.popper-container {
+  @apply relative;
+}
+
+.popper-container.popped .animate-popper-shake {
+  animation: none;
+}
+
+.popper-burst {
+  @apply absolute top-1/2 left-1/2;
+}
+
+.burst-particle {
+  @apply absolute rounded-full;
+  width: 8px;
+  height: 8px;
+  --tx: 40px;
+  --ty: -40px;
+}
+
+.burst-particle:nth-child(1) { --tx: 50px; --ty: -30px; }
+.burst-particle:nth-child(2) { --tx: 40px; --ty: -50px; }
+.burst-particle:nth-child(3) { --tx: 20px; --ty: -55px; }
+.burst-particle:nth-child(4) { --tx: -10px; --ty: -50px; }
+.burst-particle:nth-child(5) { --tx: -40px; --ty: -40px; }
+.burst-particle:nth-child(6) { --tx: -50px; --ty: -20px; }
+.burst-particle:nth-child(7) { --tx: -45px; --ty: 10px; }
+.burst-particle:nth-child(8) { --tx: -30px; --ty: 35px; }
+.burst-particle:nth-child(9) { --tx: -5px; --ty: 45px; }
+.burst-particle:nth-child(10) { --tx: 25px; --ty: 40px; }
+.burst-particle:nth-child(11) { --tx: 45px; --ty: 25px; }
+.burst-particle:nth-child(12) { --tx: 55px; --ty: 0; }
+
+/* Gift - Box opening with glow */
+@keyframes gift-appear {
+  0% { 
+    transform: scale(0) rotate(-20deg);
+    opacity: 0;
+  }
+  100% { 
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes gift-glow {
+  0%, 100% { 
+    opacity: 0;
+    transform: translateY(0) scale(1);
+  }
+  50% { 
+    opacity: 1;
+    transform: translateY(-20px) scale(1.2);
+  }
+}
+
+.animate-gift-appear {
+  animation: gift-appear 0.6s ease-out forwards;
+}
+
+.animate-gift-glow {
+  animation: gift-glow 1.5s ease-in-out infinite;
+}
+
+.gift-box {
+  @apply relative;
+}
+
+.gift-base {
+  @apply relative rounded-lg;
+  box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+}
+
+.gift-lid {
+  @apply absolute -top-3 left-0 right-0 rounded-lg transition-transform duration-500;
+  height: 12px;
+}
+
+.gift-box.opened .gift-lid {
+  transform: translateY(-20px) rotate(-30deg);
+}
+
+.gift-ribbon {
+  @apply absolute top-0 bottom-0 left-1/2 -translate-x-1/2;
+  width: 20%;
+  background: rgba(255,255,255,0.4);
+}
+
+.gift-ribbon::before {
+  content: '';
+  @apply absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2;
+  width: 150%;
+  height: 20%;
+  background: rgba(255,255,255,0.4);
+}
+
+.gift-icon {
+  @apply absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2;
+}
+
+.gift-glow {
+  @apply absolute -top-8 left-1/2 -translate-x-1/2;
+}
+
+/* Confetti - Full-screen burst with gravity */
+@keyframes confetti-gravity {
+  0% { 
+    transform: translateY(-20px) rotate(0deg);
+    opacity: 1;
+  }
+  100% { 
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+.animate-confetti-gravity {
+  animation: confetti-gravity 4s ease-in forwards;
+}
+
+.confetti-particle {
+  @apply rounded-sm;
+}
+
+/* =====================================================
+   UI ENHANCEMENT ANIMATIONS
+   ===================================================== */
+
+@keyframes icon-entrance {
+  0% { 
+    transform: scale(0) rotate(-180deg);
+    opacity: 0;
+  }
+  100% { 
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes text-reveal {
+  0% { 
+    clip-path: inset(0 100% 0 0);
+    opacity: 0;
+  }
+  100% { 
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+  }
+}
+
+@keyframes item-pop {
+  0% { 
+    transform: scale(0);
+    opacity: 0;
+  }
+  60% { 
+    transform: scale(1.1);
+  }
+  100% { 
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes attention-pulse {
+  0%, 100% { 
+    box-shadow: 0 0 0 0 hsl(var(--accent) / 0.4);
+  }
+  50% { 
+    box-shadow: 0 0 0 10px hsl(var(--accent) / 0);
+  }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-icon-entrance {
+  animation: icon-entrance 0.6s ease-out forwards;
+}
+
+.animate-text-reveal {
+  animation: text-reveal 0.8s ease-out forwards;
+}
+
+.animate-item-pop {
+  animation: item-pop 0.5s ease-out forwards;
+  opacity: 0;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2s ease-in-out infinite;
+}
+
+.animate-attention-pulse {
+  animation: attention-pulse 2s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  animation: shimmer 2s linear infinite;
+}
+
+/* Core animation classes */
 .animate-float {
   animation: float 6s ease-in-out infinite;
 }
 
 .animate-sparkle {
   animation: sparkle 2s ease-in-out infinite;
-}
-
-.animate-confetti {
-  animation: confetti-fall 4s linear infinite;
 }
 
 .animate-heartbeat {
@@ -307,4 +1239,36 @@
 
 .animate-fade-in {
   animation: fade-in 0.4s ease-out forwards;
+}
+
+/* =====================================================
+   MOBILE OPTIMIZATIONS
+   ===================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Reduce animation complexity on mobile for better performance */
+@media (max-width: 768px) {
+  .theme-animation-container .floating-element:nth-child(n+8) {
+    display: none;
+  }
+  
+  .firework,
+  .ribbon,
+  .spotlight {
+    display: none;
+  }
+  
+  .glow-orb,
+  .romantic-glow {
+    filter: blur(20px);
+  }
 }

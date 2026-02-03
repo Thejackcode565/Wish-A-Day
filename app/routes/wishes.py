@@ -126,8 +126,7 @@ async def create_wish(
         theme=wish_data.theme,
         expires_at=wish_data.expires_at,
         max_views=wish_data.max_views,
-        ip_hash=ip_hash,
-        celebration_items=[item.model_dump() for item in wish_data.celebration_items] if wish_data.celebration_items else None
+        ip_hash=ip_hash
     )
     
     db.add(wish)
@@ -199,19 +198,12 @@ async def view_wish(slug: str, db: Session = Depends(get_db)):
     image_urls = [img.url for img in wish.images]
     remaining_views = wish.max_views - wish.current_views if wish.max_views else None
     
-    # Parse celebration items from JSON
-    celebration_items = None
-    if wish.celebration_items:
-        from app.schemas import CelebrationItem
-        celebration_items = [CelebrationItem(**item) for item in wish.celebration_items]
-    
     return WishViewResponse(
         title=wish.title,
         message=wish.message,
         theme=wish.theme,
         images=image_urls,
-        remaining_views=max(0, remaining_views) if remaining_views is not None else None,
-        celebration_items=celebration_items
+        remaining_views=max(0, remaining_views) if remaining_views is not None else None
     )
 
 
